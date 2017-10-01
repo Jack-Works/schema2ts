@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "minimist": "^1.2.0",
+    "request": "^2.83.0",
+    "typescript": "^2.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^8.0.31"
+  },
+  "scripts": {
+    "postpublish": "tsc"
+  },
+  "name": "schema2ts",
+  "version": "0.0.1",
+  "description": "Generate .ts class and namespace contains interface from API Schema",
+  "main": "dist/index.js",
+  "repository": "https://github.com/Jack-Works/schema2ts",
+  "author": "Jack Works",
+  "license": "MIT"
+}
