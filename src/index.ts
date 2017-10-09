@@ -2,7 +2,7 @@ import { JSONType, BaseType } from './transformer/json.type'
 import { IEndPoint, Generator } from './transformer/iep2code'
 import schema2iep from './specs/tool'
 
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import * as minimist from 'minimist'
 import * as request from 'request'
@@ -17,6 +17,11 @@ const config: {
 	}
 
 function req<T>(url): Promise<T> {
+	if (existsSync(url)) {
+		return Promise.resolve(
+			JSON.parse(readFileSync(url, 'utf-8')
+			))
+	}
 	return new Promise((resolve, reject) => {
 		request(url, (error, response, body) => {
 			if (error) return reject(error)

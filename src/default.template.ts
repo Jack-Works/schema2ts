@@ -12,24 +12,24 @@ abstract class Helper {
         }
     }
     protected _getQueryString(params: any): string {
-        var esc = encodeURIComponent
-        let cloned = { ...params }
-        for (var i in cloned) {
+        const esc = encodeURIComponent
+        const cloned = { ...params }
+        for (const i in cloned) {
             if (cloned[i] === undefined) { delete cloned[i] }
         }
-        return Object.keys(cloned).map(k => esc(k) + '=' + esc(cloned[k])).join('&')
+        return Object.keys(cloned).map((k) => esc(k) + '=' + esc(cloned[k])).join('&')
     }
     protected Error = (data: any, response: Response): never => { throw { data, response } }
     protected _createFetchInit(
         url: string,
         init: RequestInit,
         data?: any,
-        urlParam?: { [key: string]: string | number }
+        urlParam?: { [key: string]: string | number },
     ): [string, RequestInit] {
-        const method = init.method.toUpperCase()
+        const method = (init.method || 'GET').toUpperCase()
         if (urlParam) {
-            for (const key in urlParam) {
-                url = url.replace(`{${key}}`, urlParam[key].toString())
+            for (const [key, obj] of Object.entries(urlParam)) {
+                url = url.replace(`{${key}}`, obj.toString())
             }
         }
         if (method === 'GET') {
@@ -46,11 +46,12 @@ abstract class Helper {
         const text = await res.text()
         if (!res.ok) { this.Error(this._getJSON(text), res) }
 
-        let obj = this._getJSON(text)
+        const obj = this._getJSON(text)
         Object.defineProperty(obj, '__response__', { value: res })
         return obj
     }
 }
+
 export namespace API {
     // Interfaces will inject here
 }
