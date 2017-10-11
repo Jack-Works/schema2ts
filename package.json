@@ -8,8 +8,7 @@
     "@types/node": "^8.0.31"
   },
   "scripts": {
-    "postpublish": "tsc",
-    "install": "tsc"
+    "postpublish": "tsc"
   },
   "name": "schema2ts",
   "version": "0.0.1",
