@@ -43,30 +43,46 @@ function getParamsInURL(u: string) {
 function EndPoint2Interface(ep: IEndPoint): [string, string] {
 	const name = getInterfaceName(ep)
 
-	const paramsInterface = Typescript.createInterfaceDeclaration(void 0, [Tokens.Export],
-		name + '_params', void 0, void 0, ep.params.map(getObjectPropSig))
+	const paramsInterface = ep.params.length ?
+		// export interface $name_params {...}
+		Typescript.createInterfaceDeclaration(void 0, [Tokens.Export],
+			name + '_params', void 0, void 0, ep.params.map(getObjectPropSig))
+		// If there is no params, do not generate an empty interface
+		: 'reduce empty interface'
 
-	let resultInterface: Typescript.Node
+	let resultInterface: Typescript.Node | string
 	let i: Property[]
 	if (ep.result instanceof Array) {
+		// If return type is [{...}], generate interface of {} instead of interface extends Array<{}>
 		i = ep.result
 	} else if (ep.result._type === 'array') {
 		if (ep.result.of._type === 'object') { i = [ep.result.of] }
 		else if (ep.result.of._type === 'array') {
-			/** type _return = { ... } */
+			// export type $name_return = { ... }
 			resultInterface = Typescript.createTypeAliasDeclaration(void 0, [Tokens.Export],
 				name + '_return', void 0, getTsType(ep.result.of))
 		} else {
 			// Basic type, does not need an interface or type alias
-			resultInterface = Typescript.createEmptyStatement()
+			resultInterface = 'basic type'
 		}
+	}
+	if (ep.result instanceof Array && ep.result.length === 0) {
+		resultInterface = 'empty interface'
 	}
 	/** interface _return { ... } */
 	resultInterface = resultInterface ||
 		Typescript.createInterfaceDeclaration(void 0, [Tokens.Export],
 			name + '_return', void 0, void 0, i.map(getObjectPropSig))
-	return [render(paramsInterface), resultInterface ? render(resultInterface) : '']
+	return [
+		(typeof paramsInterface === 'string')
+			? `// Removed ${ep.name}_params, beacuse: ` + paramsInterface
+			: paramsInterface ? render(paramsInterface) : '// Nothing to generate for ' + ep.name,
+		(typeof resultInterface === 'string')
+			? `// Removed ${ep.name}_return, beacuse: ` + resultInterface
+			: resultInterface ? render(resultInterface) : '// Nothing to generate for ' + ep.name,
+	]
 }
+
 function EndPoint2Code(ep: IEndPoint) {
 	let name = getInterfaceName(ep)
 
@@ -76,7 +92,7 @@ function EndPoint2Code(ep: IEndPoint) {
 				Typescript.createIdentifier(type)
 			))
 	/** Param of the generated function */
-	let params = [createParam('options', `API.${name}_params`)];
+	let params = [createParam('options', ep.params.length ? `API.${name}_params` : 'void')];
 	(urlparam => {
 		if (urlparam === null) { return }
 		/** create urlParam: { x: string | number, y: string | number } */
@@ -94,7 +110,8 @@ function EndPoint2Code(ep: IEndPoint) {
 
 	let returnType: string
 	if (ep.result instanceof Array) {
-		returnType = `API.${name}_return`
+		if (ep.result.length === 0) { returnType = 'void' }
+		else { returnType = `API.${name}_return` }
 	} else {
 		if (BaseType[ep.result.of._type]) {
 			returnType = `${ep.result.of._type.toLowerCase()}[]`
