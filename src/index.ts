@@ -34,7 +34,7 @@ function req<T>(url): Promise<T> {
 	})
 }
 async function main() {
-	if (config.templateUrl) config.template = readFileSync(config.in, 'utf-8')
+	if (config.templateUrl) config.template = readFileSync(config.templateUrl, 'utf-8')
 	console.log('1. Template get.')
 
 	let api = await req(config.in)
