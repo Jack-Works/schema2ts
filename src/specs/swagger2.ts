@@ -1,131 +1,89 @@
-import { IEndPoint } from '../transformer/iep2code'
-import { Property, ArrayOf, BaseType, JSONType } from '../transformer/json.type'
-export namespace Swagger2Doc {
-	export interface MetaData {
-		info: {
-			title: string
-			description?: string
-			version: string
-		}
-	}
-	export interface BaseUrl {
-		host: string
-		basePath: string
-		schemes: ('http' | 'https' | 'ws' | 'wss')[]
-	}
-	export interface Consumes {
-		consumes?: string[]
-		produces?: string[]
-	}
-	export interface Schema {
-		type: 'object'
-		properties: {
-			[key: string]: {
-				type: string
-				description: string
-			}
-		}
-	}
-	export interface EndPoint extends Consumes {
-		deprecated?: boolean
-		summary?: string
-		description?: string
-		responses: {
-			[HTTPCode: number]: {
-				description: string
-				schema?: Schema | { $ref: string }
-			}
-		}
-		parameters: {
-			name: string
-			in: 'query' | 'path'
-			description: string
-			type: string
-			required?: boolean
-			enum?: string[]
-		}[]
-		operationId: string
-		tags: string[]
-		externalDocs?: {
-			url: string
-			description: string
-		}
-	}
-	export interface HTTPMethods {
-		get?: Swagger2Doc.EndPoint
-		post?: Swagger2Doc.EndPoint
-		put?: Swagger2Doc.EndPoint
-		patch?: Swagger2Doc.EndPoint
-		delete?: Swagger2Doc.EndPoint
-		head?: Swagger2Doc.EndPoint
-		options?: Swagger2Doc.EndPoint
-	}
-}
-export interface Swagger2Doc extends
-	Swagger2Doc.MetaData, Swagger2Doc.BaseUrl, Swagger2Doc.Consumes {
-	swagger: '2.0'
-	paths: {
-		[path: string]: Swagger2Doc.HTTPMethods
-	}
-	definitions?: {
-		[$Refs: string]: Swagger2Doc.Schema
-	}
-}
+import { IEndPoint } from '../transformer/render'
+import * as Types from '../transformer/types'
+import { Swagger2Doc } from './swagger2.ns'
 export function is(obj: any) {
 	return obj.swagger == '2.0'
 }
-function getTypeLit(type: string): { _type: BaseType | 'object' | 'array' } {
-	if (type === 'integer') return { _type: BaseType.number }
-	if (type == 'undefined') return { _type: BaseType.string }
-	return { _type: BaseType.string }
+
+const baseTypeMap = {
+	string: '', boolean: true, integer: 1
 }
-function getType(obj: Swagger2Doc.Schema = { type: 'object', properties: {} }): Property[] {
-	return Object.keys(obj.properties).map(x => {
-		let item = obj.properties[x]
-		return {
-			key: x,
-			comment: item.description,
-			type: { _type: x },
-			_type: 'object'
-		} as Property
-	})
+function swg2schema2types(x: Swagger2Doc.Schema): Types.Type {
+	if (x === undefined) return new Types.Void
+	const like = {}
+	for (const key in x.properties) {
+		like[key] = baseTypeMap[x.properties[key].type]
+	}
+	const type: Types.ObjectOf = Types.shape(like) as Types.ObjectOf
+	type.of.forEach(y => y.jsdoc = x.properties[y.key].description)
+	type.of.forEach(y => y.optional = x.required && x.required.indexOf(y.key) !== -1)
+	return type
 }
-function transfParam(def: Swagger2Doc.EndPoint): Property[] {
-	return def.parameters.map(x => {
-		return {
-			key: x.name,
-			comment: x.description,
-			type: getTypeLit(x.type) as any,
-			_type: 'object',
-			optional: !x.required
-		} as Property
-	})
+function swg2param2obj(parameters: Swagger2Doc.EndPoint['parameters']): Types.ObjectOf {
+	return new Types.ObjectOf(parameters.filter(x => x).map(param => {
+		return ({
+			key: param.name,
+			optional: !param.required,
+			jsdoc: param.description,
+			value: param.schema ? swg2schema2types(param.schema) : Types.shape(baseTypeMap[param.type])
+		})
+	}))
 }
 
+
+/** Transformer */
 export function transform(obj: Swagger2Doc): IEndPoint[] {
-	let results: IEndPoint[] = []
-	for (let [path, methods] of Object.entries(obj.paths) as [string, Swagger2Doc.HTTPMethods][]) {
-		for (let [method, def] of Object.entries(methods) as [string, Swagger2Doc.EndPoint][]) {
-			let schema = ((Object.entries(def.responses) as [string, {
+	const results: IEndPoint[] = []
+	for (
+		const [
+			/** API Endpoint, like /api/login */path,
+			/** Shape of API Endpoint, {[keyof HTTPMethods]: ...} */shapes
+		] of Object.entries(obj.paths) as [string, Swagger2Doc.HTTPMethods][]) {
+		for (
+			const [
+				/** HTTP method, like GET, POST */method,
+				/** Shape of this method on this path, like shape of GET /api/books/ */shape
+			] of Object.entries(shapes) as [string, Swagger2Doc.EndPoint][]) {
+			/** There are 3 types of parameter
+			 *  In path (/{id}), in body (POST {obj: x}), in query (GET /?x=1)
+			 */
+			const inPath = shape.parameters.filter(x => x.in === 'path')
+			const inBody = shape.parameters.filter(x => x.in === 'body')[0]
+			const inQuery = shape.parameters.filter(x => x.in === 'query')
+			const result = shape.responses[200] || Object.values(shape.responses)[0]
+
+			const bodyParams = (b => {
+				const x = swg2param2obj([b])
+				const y = <Types.ObjectOf>swg2schema2types((inBody || { schema: void 0 }).schema)
+				console.log(x, y)
+				return y
+			})(inBody)
+			const pathParams = swg2param2obj(inPath)
+			const queryParams = swg2param2obj(inQuery)
+			const resultType = [(result as {
 				description: string
-				schema?: Swagger2Doc.Schema
-			}][])
-				.filter(([x, y]) => y.schema)[0] || ['', {
-					description: '',
-					schema: {
-						type: 'object',
-						properties: {}
-					}
-				}])[1].schema
-			let ep: IEndPoint = {
+				schema?: Swagger2Doc.Schema | { $ref: string }
+			})].map(x => {
+				if (x.schema && (x.schema as Swagger2Doc.Schema).type) {
+					const type = swg2schema2types(x.schema as Swagger2Doc.Schema)
+					return type
+				} else {
+					return new Types.Void
+				}
+			})[0]
+			results.push({
 				url: path,
-				method: method.toUpperCase() as any,
-				params: transfParam(def),
-				result: getType(schema),
-				name: def.operationId,
-				comment: def.description
-			}
-			results.push(ep)
+				method: method,
+				comment: shape.description,
+				urlParams: pathParams,
+				bodyParams: bodyParams,
+				query: queryParams,
+				result: resultType,
+				name: shape.operationId,
+				modifier: {
+					depercated: shape.deprecated
+				}
+			})
 		}
 	}
 	return results

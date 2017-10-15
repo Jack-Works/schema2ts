@@ -1,5 +1,4 @@
-import { JSONType, BaseType } from './transformer/json.type'
-import { IEndPoint, Generator } from './transformer/iep2code'
+import { IEndPoint, Generator } from './transformer/render'
 import schema2iep from './specs/tool'
 
 import { readFileSync, writeFileSync, existsSync } from 'fs'
@@ -10,12 +9,16 @@ const config: {
 	template: string,
 	in: string,
 	out: string,
-	templateUrl: string
+	templateUrl: string,
+	dryrun: boolean
 } = {
 		template: readFileSync(join(__dirname, '..', 'src', 'default.template.ts'), 'utf-8'),
-		...minimist(process.argv.slice(2))
+		...minimist(process.argv.slice(2)),
+		dryrun: false
 	}
-
+if (!config.in) {
+	throw new SyntaxError('No input. Use --in= to set one.')
+}
 function req<T>(url): Promise<T> {
 	if (existsSync(url)) {
 		return Promise.resolve(
@@ -37,12 +40,12 @@ async function main() {
 	if (config.templateUrl) config.template = readFileSync(config.templateUrl, 'utf-8')
 	console.log('1. Template get.')
 
-	let api = await req(config.in)
+	const api = await req(config.in)
 	console.log('2. API Schema get.')
 
-	let schema: IEndPoint[] = schema2iep(api)
+	const schema: IEndPoint[] = schema2iep(api)
 	const code = Generator(schema, config.template)
-	writeFileSync(config.out || './generated.ts', code)
+	if (!config.dryrun) { writeFileSync(config.out || './generated.ts', code) }
 	console.log('3. Code generated.')
 }
 main()

@@ -1,4 +1,4 @@
-import { IEndPoint } from '../transformer/iep2code'
+import { IEndPoint } from '../transformer/render'
 import { is as isSwagger2, transform as swagger2 } from './swagger2'
 export enum SupportedType {
 

@@ -5,13 +5,14 @@
     "typescript": "^2.5.3"
   },
   "devDependencies": {
-    "@types/node": "^8.0.31"
+    "@types/node": "^8.0.31",
+    "tslint": "^5.7.0"
   },
   "scripts": {
     "postpublish": "tsc"
   },
   "name": "schema2ts",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Generate .ts class and namespace contains interface from API Schema",
   "main": "dist/index.js",
   "repository": "https://github.com/Jack-Works/schema2ts",
