@@ -1,11 +1,12 @@
 {
 	"compilerOptions": {
-		"target": "esnext",
+		"target": "es6",
 		"module": "commonjs",
 		"moduleResolution": "node",
 		"outDir": "./dist/",
 		"sourceMap": true,
-		"rootDir": "./src/"
+		"rootDir": "./src/",
+		"declaration": true
 	},
 	"exclude": [
 		"./generated.ts"

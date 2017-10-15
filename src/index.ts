@@ -19,16 +19,18 @@ const config: {
 if (!config.in) {
 	throw new SyntaxError('No input. Use --in= to set one.')
 }
-function req<T>(url): Promise<T> {
+function req<T>(url, nonjson?): Promise<T> {
 	if (existsSync(url)) {
 		return Promise.resolve(
-			JSON.parse(readFileSync(url, 'utf-8')
-			))
+			(nonjson ? x => x : JSON.parse)(readFileSync(url, 'utf-8')
+			)
+		)
 	}
 	return new Promise((resolve, reject) => {
 		request(url, (error, response, body) => {
 			if (error) return reject(error)
 			try {
+				if (nonjson) resolve(body)
 				return resolve(JSON.parse(body))
 			} catch (e) {
 				return reject(e)
@@ -37,7 +39,7 @@ function req<T>(url): Promise<T> {
 	})
 }
 async function main() {
-	if (config.templateUrl) config.template = readFileSync(config.templateUrl, 'utf-8')
+	if (config.templateUrl) config.template = await req<string>(config.templateUrl)
 	console.log('1. Template get.')
 
 	const api = await req(config.in)

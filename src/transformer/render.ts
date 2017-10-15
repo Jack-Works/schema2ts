@@ -161,11 +161,11 @@ class Transformer {
 		else return render(typeRef)
 	}
 }
-
+import { values } from '../utils'
 export function Generator(schema: IEndPoint[], template: string) {
 	const transformer = new Transformer
 	schema.map(x => transformer.transform(x))
-	const interfaces = Object.values(transformer.interfaces).map(Transformer.render).join('\n')
+	const interfaces = values(transformer.interfaces).map(Transformer.render).join('\n')
 	const methods = transformer.methods.map(Transformer.render).join('\n')
 	const result = template.
 		replace('// Interfaces will inject here', interfaces).

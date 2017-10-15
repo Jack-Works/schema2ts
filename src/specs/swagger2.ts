@@ -1,7 +1,8 @@
 import { IEndPoint } from '../transformer/render'
 import * as Types from '../transformer/types'
 import { Swagger2Doc } from './swagger2.ns'
-export function is(obj: any) {
+import { entries, values } from '../utils'
+export function is(obj: any): obj is Swagger2Doc {
 	return obj.swagger == '2.0'
 }
 
@@ -52,19 +53,19 @@ export function transform(obj: Swagger2Doc): IEndPoint[] {
 		const [
 			/** API Endpoint, like /api/login */path,
 			/** Shape of API Endpoint, {[keyof HTTPMethods]: ...} */shapes
-		] of Object.entries(obj.paths) as [string, Swagger2Doc.HTTPMethods][]) {
+		] of entries<Swagger2Doc.HTTPMethods>(obj.paths)) {
 		for (
 			const [
 				/** HTTP method, like GET, POST */method,
 				/** Shape of this method on this path, like shape of GET /api/books/ */shape
-			] of Object.entries(shapes) as [string, Swagger2Doc.EndPoint][]) {
+			] of entries<Swagger2Doc.EndPoint>(shapes as any)) {
 			/** There are 3 types of parameter
 			 *  In path (/{id}), in body (POST {obj: x}), in query (GET /?x=1)
 			 */
 			const inPath = shape.parameters.filter(x => x.in === 'path')
 			const inBody = shape.parameters.filter(x => x.in === 'body')[0]
 			const inQuery = shape.parameters.filter(x => x.in === 'query')
-			const result = shape.responses[200] || Object.values(shape.responses)[0]
+			const result = shape.responses[200] || values(shape.responses)[0]
 
 			const bodyParams = (b => {
 				const x = swg2param2obj([b])
