@@ -106,8 +106,9 @@ function GenerateInterface(x: Types.Type, name: string): ts.InterfaceDeclaration
 		case Types.FalsyType.null:
 		case Types.FalsyType.undefined:
 		case Types.TypescriptType.any:
-		case Types.TypescriptType.void:
 			return 'any'
+		case Types.TypescriptType.void:
+			return 'void'
 
 		default:
 			throw new SyntaxError(`${ts.SyntaxKind[x.toTypescript().kind]} node should not appear here`)
