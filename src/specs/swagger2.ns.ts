@@ -16,15 +16,23 @@ export namespace Swagger2Doc {
 		consumes?: string[]
 		produces?: string[]
 	}
-	export interface Schema {
+	export type Schema = (SchemaObject | SchemaArray | {
+		type: 'integer' | 'string' | 'boolean'
+		description?: string
+
+	})
+	export interface SchemaObject {
 		type: 'object'
 		properties: {
-			[key: string]: {
-				type: string
-				description: string
-			}
+			[key: string]: SchemaObject
 		}
+		description?: string
 		/** required keys */required: string[]
+	}
+	export interface SchemaArray {
+		type: 'array'
+		description?: string
+		items: Schema
 	}
 	export interface EndPoint extends Consumes {
 		deprecated?: boolean
@@ -33,7 +41,7 @@ export namespace Swagger2Doc {
 		responses: {
 			[HTTPCode: number]: {
 				description: string
-				schema?: Schema | { $ref: string }
+				schema?: SchemaObject | { $ref: string }
 			}
 		}
 		parameters: {
@@ -43,7 +51,7 @@ export namespace Swagger2Doc {
 			type: string
 			required?: boolean
 			enum?: string[],
-			schema?: Schema
+			schema?: SchemaObject
 		}[]
 		operationId: string
 		tags: string[]
@@ -68,6 +76,6 @@ export interface Swagger2Doc extends Swagger2Doc.MetaData, Swagger2Doc.BaseUrl, 
 		[path: string]: Swagger2Doc.HTTPMethods
 	}
 	definitions?: {
-		[$Refs: string]: Swagger2Doc.Schema
+		[$Refs: string]: Swagger2Doc.SchemaObject
 	}
 }

@@ -10,14 +10,28 @@ const baseTypeMap = {
 }
 function swg2schema2types(x: Swagger2Doc.Schema): Types.Type {
 	if (x === undefined) return new Types.Void
-	const like = {}
-	for (const key in x.properties) {
-		like[key] = baseTypeMap[x.properties[key].type]
+	switch (x.type) {
+		case 'string':
+		case 'boolean':
+		case 'integer':
+			return Types.shape(baseTypeMap[x.type])
+
+		case 'object':
+			const like = {}
+			for (const key in x.properties) {
+				like[key] = swg2schema2types(x.properties[key])
+			}
+			const type: Types.ObjectOf = Types.shape(like) as Types.ObjectOf
+			type.of.forEach(y => y.jsdoc = x.properties[y.key].description)
+			type.of.forEach(y => y.optional = x.required && x.required.indexOf(y.key) !== -1)
+			if (type.of.length === 0) return new Types.Any
+			return type
+		case 'array':
+			return new Types.ArrayOf(swg2schema2types(x.items))
+
+		default:
+			throw new TypeError(`Unknown type: Can not handle this type of object ${JSON.stringify(x)}`)
 	}
-	const type: Types.ObjectOf = Types.shape(like) as Types.ObjectOf
-	type.of.forEach(y => y.jsdoc = x.properties[y.key].description)
-	type.of.forEach(y => y.optional = x.required && x.required.indexOf(y.key) !== -1)
-	return type
 }
 function swg2param2obj(parameters: Swagger2Doc.EndPoint['parameters']): Types.ObjectOf {
 	return new Types.ObjectOf(parameters.filter(x => x).map(param => {
@@ -55,17 +69,16 @@ export function transform(obj: Swagger2Doc): IEndPoint[] {
 			const bodyParams = (b => {
 				const x = swg2param2obj([b])
 				const y = <Types.ObjectOf>swg2schema2types((inBody || { schema: void 0 }).schema)
-				console.log(x, y)
 				return y
 			})(inBody)
 			const pathParams = swg2param2obj(inPath)
 			const queryParams = swg2param2obj(inQuery)
 			const resultType = [(result as {
 				description: string
-				schema?: Swagger2Doc.Schema | { $ref: string }
+				schema?: Swagger2Doc.SchemaObject | { $ref: string }
 			})].map(x => {
-				if (x.schema && (x.schema as Swagger2Doc.Schema).type) {
-					const type = swg2schema2types(x.schema as Swagger2Doc.Schema)
+				if (x.schema && (x.schema as Swagger2Doc.SchemaObject).type) {
+					const type = swg2schema2types(x.schema as Swagger2Doc.SchemaObject)
 					return type
 				} else {
 					return new Types.Void

@@ -2,9 +2,11 @@ import * as ts from 'typescript'
 import * as Types from './types'
 
 /** Printer that used by render  */
-const [printer, doc] = [ts.createPrinter({
-	newLine: ts.NewLineKind.LineFeed, removeComments: false
-}), ts.createSourceFile('', '', ts.ScriptTarget.Latest)]
+const [printer, doc] = [
+	ts.createPrinter({
+		newLine: ts.NewLineKind.LineFeed, removeComments: false
+	}),
+	ts.createSourceFile('', '', ts.ScriptTarget.Latest)]
 
 /** Typescript.Node -> string */
 function render(node: ts.Node): string {
@@ -50,12 +52,15 @@ function GenerateMethod(
 	parameters: { key: string, type: string }[],
 	returnType: ts.TypeNode | string | undefined,
 	body: ts.Block,
+	JSDocCommet?: string,
 	modifier?: ts.Modifier[],
 	decorator?: ts.Decorator[]) {
 	const tparameters = parameters.filter(x => x.type).map(x => {
 		return ts.createParameter(void 0, void 0, void 0, x.key, void 0, ts.createTypeReferenceNode(x.type, void 0))
 	})
-	const tdecorator = [...(decorator || [])]
+	// TODO: Typescript Does not support generate jsdoc, so we have to make a fake decorator
+	const JSDoc: ts.Decorator = JSDocCommet && ts.createDecorator(ts.createIdentifier(`__JSDoc__ /** ${JSDocCommet} */`))
+	const tdecorator = [JSDoc, ...(decorator || [])]
 	const tmodifier = [Tokens.protected, ...(modifier || [])]
 	const returnTypeRef = (typeof returnType === 'string') ? ts.createTypeReferenceNode(returnType, void 0) : returnType
 	return ts.createMethod(tdecorator, tmodifier,
@@ -69,8 +74,6 @@ function GenerateInterface(x: Types.Type, name: string): ts.InterfaceDeclaration
 		case Types.Types.boolean:
 		case Types.Types.number:
 		case Types.Types.string:
-		case Types.FalsyType.null:
-		case Types.FalsyType.undefined:
 			return Types.Types[x.type]
 
 		case Types.ComplexType.object:
@@ -94,10 +97,11 @@ function GenerateInterface(x: Types.Type, name: string): ts.InterfaceDeclaration
 					])
 				], []
 			)
+		case Types.FalsyType.null:
+		case Types.FalsyType.undefined:
 		case Types.TypescriptType.any:
-			return 'any'
 		case Types.TypescriptType.void:
-			return 'void'
+			return 'any'
 
 		default:
 			throw new SyntaxError(`${ts.SyntaxKind[x.toTypescript().kind]} node should not appear here`)
@@ -141,7 +145,8 @@ class Transformer {
 					}>('${ep.url}', '${ep.method.toUpperCase()}', ${
 					parameters.map(x => x.type === 'void' ? 'undefined' : x.key).join(', ')
 					})`)
-			)])
+			)]),
+			ep.comment
 		))
 	}
 	static render(typeRef: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | string | ts.MethodDeclaration): string {
@@ -158,5 +163,6 @@ export function Generator(schema: IEndPoint[], template: string) {
 	const result = template.
 		replace('// Interfaces will inject here', interfaces).
 		replace('// Code here', methods)
-	return render(ts.createSourceFile('generated.ts', result, ts.ScriptTarget.Latest, false))
+	return render(ts.createSourceFile('generated.ts', result, ts.ScriptTarget.Latest, false)).
+		replace(/@__JSDoc__ /g, '')
 }
