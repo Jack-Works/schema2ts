@@ -10,11 +10,12 @@
   },
   "scripts": {
     "g:win": "rm -Recurse -Force ./dist/ && tsc",
-    "g:nix": "rm -rf ./dist && tsc"
+    "g:nix": "rm -rf ./dist && tsc",
+    "install": "tsc"
   },
   "bin": "./dist/index.js",
   "name": "schema2ts",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Generate .ts class and namespace contains interface from API Schema",
   "main": "dist/index.js",
   "repository": "https://github.com/Jack-Works/schema2ts",
