@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { IEndPoint, Generator } from './transformer/render'
 import schema2iep from './specs/tool'
 
@@ -39,7 +40,7 @@ function req<T>(url, nonjson?): Promise<T> {
 	})
 }
 async function main() {
-	if (config.templateUrl) config.template = await req<string>(config.templateUrl)
+	if (config.templateUrl) config.template = await req<string>(config.templateUrl, true)
 	console.log('1. Template get.')
 
 	const api = await req(config.in)
