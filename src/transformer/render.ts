@@ -79,9 +79,15 @@ function GenerateInterface(x: Types.Type, name: string): ts.InterfaceDeclaration
 		case Types.ComplexType.object:
 			const obj = x as Types.ObjectOf
 			if (obj.of.length === 0) return 'void' // interface elimination
+			const jsDocObj = new Types.ObjectOf(obj.of.map(x => { // clone a ObjectOf but jsdoc version
+				if (!x.jsdoc) return x
+				const y = { ...x }
+				y.key = `/** ${x.jsdoc} */` + x.key
+				return y
+			}))
 			return ts.createInterfaceDeclaration(
 				void 0, [Tokens.export], name,
-				void 0, void 0, obj.toTypescript().members)
+				void 0, void 0, jsDocObj.toTypescript().members)
 		case Types.ComplexType.array:
 			/**
 			 * create interface $name extends Array<sth> {}

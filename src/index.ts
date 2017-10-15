@@ -13,8 +13,8 @@ const config: {
 	dryrun: boolean
 } = {
 		template: readFileSync(join(__dirname, '..', 'src', 'default.template.ts'), 'utf-8'),
+		dryrun: false,
 		...minimist(process.argv.slice(2)),
-		dryrun: false
 	}
 if (!config.in) {
 	throw new SyntaxError('No input. Use --in= to set one.')
