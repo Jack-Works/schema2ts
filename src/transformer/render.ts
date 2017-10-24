@@ -71,10 +71,10 @@ function GenerateMethod(
 
 function GenerateInterface(x: Types.Type, name: string): ts.InterfaceDeclaration | ts.TypeAliasDeclaration | string {
 	switch (x.type) {
-		case Types.Types.boolean:
-		case Types.Types.number:
-		case Types.Types.string:
-			return Types.Types[x.type]
+		case Types.LiteralType.boolean:
+		case Types.LiteralType.number:
+		case Types.LiteralType.string:
+			return Types.LiteralType[x.type]
 
 		case Types.ComplexType.object:
 			const obj = x as Types.ObjectOf
@@ -105,9 +105,9 @@ function GenerateInterface(x: Types.Type, name: string): ts.InterfaceDeclaration
 			)
 		case Types.FalsyType.null:
 		case Types.FalsyType.undefined:
-		case Types.TypescriptType.any:
+		case Types.TypescriptFalsyType.any:
 			return 'any'
-		case Types.TypescriptType.void:
+		case Types.TypescriptFalsyType.void:
 			return 'void'
 
 		default:

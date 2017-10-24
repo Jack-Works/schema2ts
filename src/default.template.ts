@@ -5,7 +5,7 @@
  */
 export interface PlainObject<T> { [key: string]: T }
 export abstract class Helper {
-    protected fetch = fetch
+    protected fetch: typeof fetch = (x, y) => fetch(x, y)
     protected _getJSON(o: string): any {
         try {
             return JSON.parse(o)
@@ -40,7 +40,10 @@ export abstract class Helper {
             url = url + '?' + this._getQueryString(query)
         }
         if (bodyParams) {
-            init.headers['Content-type'] = 'application/json'
+            init.headers = init.headers || {
+                'Content-type': 'application/json',
+                ...init.headers,
+            }
             init.body = JSON.stringify(bodyParams)
         }
         return [url, init]

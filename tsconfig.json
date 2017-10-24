@@ -9,6 +9,7 @@
 		"declaration": true
 	},
 	"exclude": [
-		"./generated.ts"
+		"./generated.ts",
+		"./dist"
 	]
 }
