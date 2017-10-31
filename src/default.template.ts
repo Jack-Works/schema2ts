@@ -40,9 +40,9 @@ export abstract class Helper {
             url = url + '?' + this._getQueryString(query)
         }
         if (bodyParams) {
-            init.headers = init.headers || {
+            init.headers = {
                 'Content-type': 'application/json',
-                ...init.headers,
+                ...(init.headers || {}),
             }
             init.body = JSON.stringify(bodyParams)
         }
