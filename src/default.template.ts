@@ -43,7 +43,7 @@ export abstract class Helper {
             init.headers = {
                 'Content-type': 'application/json',
                 ...(init.headers || {}),
-            }
+            } as any
             init.body = JSON.stringify(bodyParams)
         }
         return [url, init]
