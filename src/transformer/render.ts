@@ -117,6 +117,7 @@ function GenerateInterface(x: Types.Type, name: string): ts.InterfaceDeclaration
 class Transformer {
 	interfaces: { [key: string]: (ts.InterfaceDeclaration | ts.TypeAliasDeclaration | string) } = {}
 	methods: ts.MethodDeclaration[] = []
+	metadatas: object[] = []
 	transform(ep: IEndPoint) {
 		const name = getInterfaceName(ep)
 		const pathParams = GenerateInterface(ep.urlParams, name + '_url')
@@ -141,6 +142,7 @@ class Transformer {
 		}, {
 			key: 'data', type: chooseCorrectTypeRef(bodyParams, 'API.' + name + '_body')
 		}]
+		this.metadatas.push({ path: ep.url, method: ep.method.toUpperCase(), name: ep.name })
 		this.methods.push(GenerateMethod(
 			name,
 			parameters.filter(x => x.type !== 'void'),
@@ -149,7 +151,7 @@ class Transformer {
 				ts.createIdentifier(`
 					return this.__<${
 					chooseCorrectTypeRef(returnType, name + '_result')
-					}>('${ep.url}', '${ep.method.toUpperCase()}', ${
+					}>(${ep.name}.path, ${ep.name}.method, ${
 					parameters.map(x => x.type === 'void' ? 'undefined' : x.key).join(', ')
 					})`)
 			)]),
@@ -162,6 +164,7 @@ class Transformer {
 	}
 }
 import { values } from '../utils'
+import { transform } from 'typescript'
 export function Generator(schema: IEndPoint[], template: string) {
 	const transformer = new Transformer
 	schema.map(x => transformer.transform(x))
@@ -169,7 +172,12 @@ export function Generator(schema: IEndPoint[], template: string) {
 	const methods = transformer.methods.map(Transformer.render).join('\n')
 	const result = template.
 		replace('// Interfaces will inject here', interfaces).
-		replace('// Code here', methods)
+		replace('// Code here', methods).
+		replace('// Metadata will inject here', transformer.metadatas.reduce((p, t: any) => {
+			const name = t.name
+			delete (t as any).name
+			return `${p}\nexport let ${name} = ${JSON.stringify(t)}`
+		}, ''))
 	return render(ts.createSourceFile('generated.ts', result, ts.ScriptTarget.Latest, false)).
 		replace(/@__JSDoc__ /g, '')
 }

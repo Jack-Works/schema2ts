@@ -41,16 +41,7 @@ export class Literal extends Type {
 	toTypescript() {
 		if (this.value === undefined) return ts.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword)
 		if (this.value === null) return ts.createKeywordTypeNode(ts.SyntaxKind.NullKeyword)
-		/**
-		 * error TS2345: Argument of type 'PrimaryExpression' is not assignable to parameter of type
-		 * 'LiteralExpression | BooleanLiteral | PrefixUnaryExpression'.
-		 * Type 'PrimaryExpression' is not assignable to type 'LiteralExpression'.
-		 * Property '_literalExpressionBrand' is missing in type 'PrimaryExpression'.
-		 *
-		 * TODO: Fix this, this get error after typescript 2.5 -> 2.6
-		 */
-		// if (this.literal) return ts.createLiteralTypeNode(ts.createLiteral(this.value))
-		//                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		if (this.literal) return ts.createLiteralTypeNode(ts.createLiteral(this.value.toString()))
 		return ts.createKeywordTypeNode(({
 			boolean: ts.SyntaxKind.BooleanKeyword,
 			string: ts.SyntaxKind.StringKeyword,
