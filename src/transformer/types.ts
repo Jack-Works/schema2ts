@@ -3,6 +3,7 @@ export enum LiteralType { boolean = 1, number, string }
 export enum FalsyType { null = 100, undefined }
 export enum ComplexType { array = 200, object }
 export enum ConstructedType { enum = 300, or, and, tuple }
+export enum TypescriptType { TypeReference = 400 }
 export enum TypescriptFalsyType { any = -100, void }
 export abstract class Type {
 	/** Transform Type to string, that in format of Typescript interface */
@@ -11,7 +12,14 @@ export abstract class Type {
 	abstract toTypescript(): ts.TypeNode
 	/** Cut type information to be human-friendly, but less precise */
 	abstract reduce(): Type
-	type: LiteralType | FalsyType | ComplexType | ConstructedType | TypescriptFalsyType
+	type: LiteralType | FalsyType | ComplexType | ConstructedType | TypescriptFalsyType | TypescriptType
+}
+export class TypeReference extends Type {
+	constructor(public ref: string) { super() }
+	type = TypescriptType.TypeReference
+	toString() { return this.ref }
+	reduce() { return this }
+	toTypescript() { return ts.createTypeReferenceNode(this.ref, []) }
 }
 export class Void extends Type {
 	type = TypescriptFalsyType.void
@@ -242,3 +250,5 @@ export function shape(any: any, guessMode?: boolean): Type {
 	if (guessMode === true) return returnValue.reduce()
 	return returnValue
 }
+
+ts

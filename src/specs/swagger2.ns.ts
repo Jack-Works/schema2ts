@@ -17,7 +17,7 @@ export namespace Swagger2Doc {
 		produces?: string[]
 	}
 	export type Schema = (SchemaObject | SchemaArray | {
-		type: 'integer' | 'string' | 'boolean'
+		type: 'string' | 'boolean' | 'number' | 'integer'
 		description?: string
 
 	})
@@ -38,13 +38,13 @@ export namespace Swagger2Doc {
 		deprecated?: boolean
 		summary?: string
 		description?: string
-		responses: {
+		responses?: {
 			[HTTPCode: number]: {
 				description: string
 				schema?: SchemaObject | { $ref: string }
 			}
 		}
-		parameters: {
+		parameters?: {
 			name: string
 			in: 'query' | 'path' | 'body'
 			description: string

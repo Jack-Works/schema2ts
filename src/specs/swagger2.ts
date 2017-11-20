@@ -1,13 +1,17 @@
-import { IEndPoint } from '../transformer/render'
+import { IEndPoint, ExtraData } from '../transformer/render'
 import * as Types from '../transformer/types'
 import { Swagger2Doc } from './swagger2.ns'
 import { entries, values } from '../utils'
+import { TypeReference } from '../transformer/types'
 export function is(obj: any): obj is Swagger2Doc {
 	return obj.swagger == '2.0'
 }
 
 const baseTypeMap = {
-	string: '', boolean: true, integer: 1
+	string: '',
+	boolean: true,
+	integer: 1,
+	number: 1
 }
 function swg2schema2types(x: Swagger2Doc.Schema): Types.Type {
 	if (x === undefined) return new Types.Void
@@ -15,6 +19,7 @@ function swg2schema2types(x: Swagger2Doc.Schema): Types.Type {
 		case 'string':
 		case 'boolean':
 		case 'integer':
+		case 'number':
 			return Types.shape(baseTypeMap[x.type])
 
 		case 'object':
@@ -31,6 +36,8 @@ function swg2schema2types(x: Swagger2Doc.Schema): Types.Type {
 			return new Types.ArrayOf(swg2schema2types(x.items))
 
 		default:
+			const key = (x as any).$ref
+			if (key) { return new TypeReference(key.replace('#/definitions/', '')) }
 			throw new TypeError(`Unknown type: Can not handle this type of object ${JSON.stringify(x)}`)
 	}
 }
@@ -62,10 +69,17 @@ export function transform(obj: Swagger2Doc): IEndPoint[] {
 			/** There are 3 types of parameter
 			 *  In path (/{id}), in body (POST {obj: x}), in query (GET /?x=1)
 			 */
-			const inPath = shape.parameters.filter(x => x.in === 'path')
-			const inBody = shape.parameters.filter(x => x.in === 'body')[0]
-			const inQuery = shape.parameters.filter(x => x.in === 'query')
-			const result = shape.responses[200] || values(shape.responses)[0]
+			const parameters = shape.parameters || []
+			const inPath = parameters.filter(x => x.in === 'path')
+			const inBody = parameters.filter(x => x.in === 'body')[0]
+			const inQuery = parameters.filter(x => x.in === 'query')
+			let result: {
+				description: string
+				schema?: Swagger2Doc.SchemaObject | { $ref: string }
+			} = { description: 'This method has no response type' }
+			if (shape.responses) {
+				result = shape.responses[200] || values(shape.responses)[0]
+			}
 
 			const bodyParams = (b => {
 				const x = swg2param2obj([b])
@@ -101,4 +115,16 @@ export function transform(obj: Swagger2Doc): IEndPoint[] {
 		}
 	}
 	return results
+}
+/** Get other data */
+export function getExtraData(obj: Swagger2Doc): ExtraData {
+	//#region Interfaces
+	const interfaces: ExtraData['interfaces'] = []
+	for (const key in obj.definitions) {
+		const type = swg2schema2types(obj.definitions[key])
+		// #/definitions/ is JSON Reference Pointer (http://tools.ietf.org/html/rfc6901)
+		interfaces.push({ name: key.replace('#/definitions/', ''), type })
+	}
+	//#endregion
+	return { interfaces }
 }

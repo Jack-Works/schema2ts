@@ -30,9 +30,12 @@ export interface IEndPoint {
 		depercated?: boolean
 	}
 }
+export interface ExtraData {
+	interfaces: { name: string, type: Types.Type }[],
+}
 function transformUrl(url: string) {
 	return url.
-		replace(/(\/| |_)/g, '_').replace(/{/g, '$').replace(/}/g, '')
+		replace(/(\/| |_|\?|=|-)/g, '_').replace(/{/g, '$').replace(/}/g, '')
 }
 function getInterfaceName(ep: IEndPoint) {
 	return transformUrl(ep.name || ep.url + '_' + ep.method.toUpperCase())
@@ -109,6 +112,9 @@ function GenerateInterface(x: Types.Type, name: string): ts.InterfaceDeclaration
 			return 'any'
 		case Types.TypescriptFalsyType.void:
 			return 'void'
+		case Types.TypescriptType.TypeReference:
+			const ref = x.toString()
+			return 'API.' + ref
 
 		default:
 			throw new SyntaxError(`${ts.SyntaxKind[x.toTypescript().kind]} node should not appear here`)
@@ -120,6 +126,7 @@ class Transformer {
 	metadatas: object[] = []
 	transform(ep: IEndPoint) {
 		const name = getInterfaceName(ep)
+		ep.name = ep.name || name
 		const pathParams = GenerateInterface(ep.urlParams, name + '_url')
 		const bodyParams = GenerateInterface(ep.bodyParams, name + '_body')
 		const query = GenerateInterface(ep.query, name + '_query')
@@ -130,9 +137,12 @@ class Transformer {
 		this.interfaces[name + '_query'] = query
 		this.interfaces[name + '_result'] = returnType
 
-		const chooseCorrectTypeRef = (typeLit, typeRef) => {
-			if (ts.isInterfaceDeclaration(typeLit) && typeLit.members.length === 0) return 'void'
+		const chooseCorrectTypeRef = (
+			typeLit: string | ts.InterfaceDeclaration | ts.TypeAliasDeclaration,
+			typeRef: string
+		) => {
 			if (typeof typeLit === 'string') return typeLit
+			if (ts.isInterfaceDeclaration(typeLit) && typeLit.members.length === 0) return 'void'
 			return typeRef
 		}
 		const parameters = [{
@@ -150,13 +160,19 @@ class Transformer {
 			ts.createBlock([ts.createStatement(
 				ts.createIdentifier(`
 					return this.__<${
-					chooseCorrectTypeRef(returnType, name + '_result')
+					chooseCorrectTypeRef(returnType, 'API.' + name + '_result')
 					}>(${ep.name}.path, ${ep.name}.method, ${
 					parameters.map(x => x.type === 'void' ? 'undefined' : x.key).join(', ')
 					})`)
 			)]),
 			ep.comment
 		))
+	}
+	/** Read ExtraData.interface */
+	exportedInterface(interfaces: ExtraData['interfaces']) {
+		interfaces.forEach(({ name, type }) => {
+			this.interfaces[name] = GenerateInterface(type, name)
+		})
 	}
 	static render(typeRef: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | string | ts.MethodDeclaration): string {
 		if (typeof typeRef === 'string') return ''
@@ -165,9 +181,11 @@ class Transformer {
 }
 import { values } from '../utils'
 import { transform } from 'typescript'
-export function Generator(schema: IEndPoint[], template: string) {
+export function Generator(schema: IEndPoint[], template: string, extra: ExtraData) {
 	const transformer = new Transformer
+	transformer.exportedInterface(extra.interfaces)
 	schema.map(x => transformer.transform(x))
+	// Read data
 	const interfaces = values(transformer.interfaces).map(Transformer.render).join('\n')
 	const methods = transformer.methods.map(Transformer.render).join('\n')
 	const result = template.

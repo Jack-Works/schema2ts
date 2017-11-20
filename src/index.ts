@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { IEndPoint, Generator } from './transformer/render'
-import schema2iep from './specs/tool'
+import schema2iep, { getExtraData } from './specs/tool'
 
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
@@ -47,7 +47,8 @@ async function main() {
 	console.log('2. API Schema get.')
 
 	const schema: IEndPoint[] = schema2iep(api)
-	const code = Generator(schema, config.template)
+	const extra = getExtraData(api)
+	const code = Generator(schema, config.template, extra)
 	if (!config.dryrun) { writeFileSync(config.out || './generated.ts', code) }
 	console.log('3. Code generated.')
 }
