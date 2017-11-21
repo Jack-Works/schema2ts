@@ -1,50 +1,35 @@
 import * as ts from 'typescript'
 export enum LiteralType { boolean = 1, number, string }
-export enum FalsyType { null = 100, undefined }
-export enum ComplexType { array = 200, object }
-export enum ConstructedType { enum = 300, or, and, tuple }
-export enum TypescriptType { TypeReference = 400 }
+export enum FalsyType { null = -50, undefined }
 export enum TypescriptFalsyType { any = -100, void }
+export enum ComplexType { array = 200, object }
+export enum ConstructedType { or = 300, and, tuple }
+export enum TypescriptType { enum = 400, TypeReference }
+function is<T extends Type>(x: Type, type: Type['type']): x is T { return x.type === type }
 export abstract class Type {
-	/** Transform Type to string, that in format of Typescript interface */
-	abstract toString(): string
-	/** Transform Type to Typescript.TypeNode for future use */
 	abstract toTypescript(): ts.TypeNode
-	/** Cut type information to be human-friendly, but less precise */
-	abstract reduce(): Type
+	/** Cut type information to be human-friendly, but maybe less precise */
+	reduce(keepPrecise?: boolean): Type { return this }
+
+	/** To make this type referenceable, what declaration need to generate */
+	getDeclaration(): ts.Declaration[] { return [] }
 	type: LiteralType | FalsyType | ComplexType | ConstructedType | TypescriptFalsyType | TypescriptType
+	isFalsy(obj: Type): obj is Any | Void {
+		const falsy = {
+			[FalsyType.null]: 1, [FalsyType.undefined]: 1, [TypescriptFalsyType.any]: 1,
+			[TypescriptFalsyType.void]: 1
+		}
+		return falsy[obj.type]
+	}
 }
-export class TypeReference extends Type {
-	constructor(public ref: string) { super() }
-	type = TypescriptType.TypeReference
-	toString() { return this.ref }
-	reduce() { return this }
-	toTypescript() { return ts.createTypeReferenceNode(this.ref, []) }
-}
-export class Void extends Type {
-	type = TypescriptFalsyType.void
-	toString() { return 'void' }
-	toTypescript() { return ts.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword) }
-	reduce() { return this }
-}
-export class Any extends Type {
-	type = TypescriptFalsyType.any
-	toString() { return 'any' }
-	toTypescript() { return ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword) }
-	reduce() { return this }
-}
+//#region Literal, Any, Void
 export class Literal extends Type {
 	constructor(
 		public value: boolean | number | string | undefined | null,
-		/** Is this type have a concrete value? */public literal: boolean
+		/** Does this type have a literal value? */public literal: boolean
 	) {
 		super()
 		this.type = LiteralType[typeof value] || FalsyType[typeof value] || FalsyType.null
-	}
-	toString() {
-		if (this.value === undefined) return 'undefined'
-		if (this.literal) return JSON.stringify(this.value)
-		return LiteralType[this.type]
 	}
 	toTypescript() {
 		if (this.value === undefined) return ts.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword)
@@ -56,50 +41,43 @@ export class Literal extends Type {
 			number: ts.SyntaxKind.NumberKeyword
 		})[typeof this.value])
 	}
-	reduce() {
+	reduce(keepPrecise?: boolean) {
 		/** We will drop all literals here */
-		if (this.literal) { return shape(this.value) }
+		if (this.literal && !keepPrecise) { return shape(this.value) }
 		else return this
 	}
 }
-
+export class Any extends Type {
+	type = TypescriptFalsyType.any
+	toTypescript() { return ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword) }
+}
+export class Void extends Type {
+	type = TypescriptFalsyType.void
+	toTypescript() { return ts.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword) }
+}
+//#endregion
+//#region ComplexType
 export class ArrayOf<T extends Type = Type> extends Type {
 	type = ComplexType.array
 	constructor(public of: T) { super() }
-	toString() { return this.of.toString() + '[]' }
-	toTypescript() {
-		return ts.createArrayTypeNode(this.of.toTypescript())
-	}
-	reduce() {
-		return new ArrayOf(this.of.reduce())
-	}
+	getDeclaration() { return this.of.getDeclaration() }
+	toTypescript() { return ts.createArrayTypeNode(this.of.toTypescript()) }
+	reduce() { return new ArrayOf(this.of.reduce()) }
 }
 
-// class EnumOf extends Type {
-// 	type = ConstructedType.enum
-// 	constructor(public name: string, public of: string[]) { super() }
-// 	toString() { return ``}
-// }
-export interface ObjectOfWhat {
-	key: string, optional?: boolean, value: Type, jsdoc?: string,
-}
+export interface ObjectOfWhat { key: string, optional?: boolean, value: Type, jsdoc?: string, }
 export class ObjectOf extends Type {
 	type = ComplexType.object
 	constructor(public of: ObjectOfWhat[]) { super() }
-	toString() {
-		const r = '{' + this.of.map(t => `${t.key}${t.optional ? '?' : ''}: ${t.value.toString()}`).join(',') + '}'
-		if (r === '{}') { return 'object' }
-		return r
-	}
 	toTypescript() {
 		return ts.createTypeLiteralNode(
 			this.of.map(x => {
 				return ts.createPropertySignature(
-					void 0,
+					null,
 					/** name */x.key,
-					/** question mark */x.optional ? ts.createToken(ts.SyntaxKind.QuestionToken) : void 0,
+					/** question mark */x.optional ? ts.createToken(ts.SyntaxKind.QuestionToken) : null,
 					/** subtype */x.value.toTypescript(),
-					void 0
+					null
 				)
 			})
 		)
@@ -111,7 +89,75 @@ export class ObjectOf extends Type {
 			})
 		)
 	}
+	getDeclaration() { return [].concat(this.of.map(x => x.value.getDeclaration())) }
+
 }
+//#endregion
+//#region Typescript Type
+export class EnumOf extends Type {
+	type = TypescriptType.enum
+	constructor(public name: string, public of: string[], public val: string[] | number[] = []) { super() }
+	getDeclaration() {
+		/** `export enum name { of[0]: val[0], of[1]: val[1], ... }` */
+		const self = ts.createEnumDeclaration(null, [ts.createToken(ts.SyntaxKind.ExportKeyword)], name, [
+			...this.of.map((member, index) => {
+				const memberInitValue = ts.createLiteral(this.val[index])
+				return ts.createEnumMember(member, this.val[index] && memberInitValue)
+			})
+		])
+		return [self]
+	}
+	toTypescript() { return ts.createTypeReferenceNode(this.name, null) }
+}
+export class TypeReferenceType extends Type {
+	type = TypescriptType.TypeReference
+	private get eliminated() {
+		if (is<ObjectOf>(this.of, ComplexType.object)) return this.of.of.length === 0
+		if (is<ArrayOf>(this.of, ComplexType.array)) return this.isFalsy(this.of.of)
+		if (this.isFalsy(this.of)) return true
+		return false
+	}
+	constructor(public ref: string, public of: Type) { super() }
+	toTypescript() {
+		if (this.eliminated) {
+			if (this.isFalsy(this.of)) {
+				if (is<Void>(this.of, TypescriptFalsyType.void)) { return (new Void).toTypescript() }
+				return (new Any).toTypescript()
+			}
+			if (is<ObjectOf>(this.of, ComplexType.object)) {
+				return (new Void).toTypescript()
+			}
+			if (is<ArrayOf>(this.of, ComplexType.array)) {
+				return ts.createArrayTypeNode((new Void).toTypescript())
+			}
+			return (new Any).toTypescript()
+		}
+		return ts.createTypeReferenceNode(this.ref, null)
+	}
+	getDeclaration() {
+		/** If this.of is eliminated, do not generate type reference
+		 *  if this.of is a Object, generate an interface
+		 *  otherwise, generate a type alias (type X = Type)
+		 */
+		let d: ts.Declaration = null
+		if (this.eliminated) { return this.of.getDeclaration() }
+		if (is<ObjectOf>(this.of, ComplexType.object)) {
+			const jsDocObj = new ObjectOf(this.of.of.map(x => { // clone a ObjectOf but jsdoc version
+				if (!x.jsdoc) return x
+				const y = { ...x }
+				y.key = `/** ${x.jsdoc} */` + x.key
+				return y
+			}))
+			d = ts.createInterfaceDeclaration(
+				void 0, [ts.createToken(ts.SyntaxKind.ExportKeyword)], name,
+				void 0, void 0, jsDocObj.toTypescript().members)
+		}
+		d = ts.createTypeAliasDeclaration(null, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.ref, null, this.of.toTypescript())
+		return [...this.of.getDeclaration(), d]
+	}
+}
+//#endregion
+//#region ConstructedType Helper
 function RemoveDuplicateBaseType(x: Type[]): Type[] {
 	const newTypes: Type[] = []
 	x.forEach(o => {
@@ -174,16 +220,13 @@ function GetFlattedAndOr(self: And | Or, x: Type[]): Type[] {
 	if (others.length) return result.concat(...others.map(x => GetFlattedAndOr(self, (x as And | Or).of)))
 	return result
 }
+//#endregion
+//#region ConstructedType
 export class Or extends Type {
 	type = ConstructedType.or
 	constructor(public of: Type[]) {
 		super()
 		this.of = RemoveDuplicateBaseType(this.of)
-	}
-	toString() {
-		if (this.of.length === 0) return 'any'
-		if (this.of.length === 1) return this.of[0].toString()
-		return '(' + this.of.map(t => t.toString()).join(' | ') + ')'
 	}
 	toTypescript() {
 		return ts.createUnionTypeNode(this.of.map(x => x.toTypescript()))
@@ -194,18 +237,13 @@ export class Or extends Type {
 		if (r.length === 1) return r[0]
 		return new Or(r)
 	}
+	getDeclaration() { return [].concat(this.of.map(x => x.getDeclaration())) }
 }
-
 export class And extends Type {
 	type = ConstructedType.and
 	constructor(public of: Type[]) {
 		super()
 		this.of = RemoveDuplicateBaseType(of)
-	}
-	toString() {
-		if (this.of.length === 0) return 'any'
-		if (this.of.length === 1) return this.of[0].toString()
-		return '(' + this.of.map(t => t.toString()).join(' & ') + ')'
 	}
 	toTypescript() {
 		return ts.createIntersectionTypeNode(this.of.map(x => x.toTypescript()))
@@ -216,18 +254,18 @@ export class And extends Type {
 		if (r.length === 1) return r[0]
 		return new And(r)
 	}
+	getDeclaration() { return [].concat(this.of.map(x => x.getDeclaration())) }
 }
-
 export class TupleOf extends Type {
 	type = ConstructedType.tuple
 	constructor(public of: Type[]) { super() }
-	toString() { return '[' + this.of.map(t => t.toString()).join(', ') + ']' }
 	toTypescript() {
 		return ts.createTupleTypeNode(this.of.map(x => x.toTypescript()))
 	}
 	reduce() { return new TupleOf(this.of.map(x => x.reduce())) }
+	getDeclaration() { return [].concat(this.of.map(x => x.getDeclaration())) }
 }
-
+//#endregion
 /** Geneate a shape of the object
  * if guessMode is on, we will generate a more grace but less correctness type for it
  */
@@ -250,5 +288,3 @@ export function shape(any: any, guessMode?: boolean): Type {
 	if (guessMode === true) return returnValue.reduce()
 	return returnValue
 }
-
-ts
