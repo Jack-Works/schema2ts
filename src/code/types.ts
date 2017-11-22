@@ -5,7 +5,7 @@ export enum TypescriptFalsyType { any = -100, void }
 export enum ComplexType { array = 200, object }
 export enum ConstructedType { or = 300, and, tuple }
 export enum TypescriptType { enum = 400, TypeReference }
-function is<T extends Type>(x: Type, type: Type['type']): x is T { return x.type === type }
+export function is<T extends Type>(x: Type, type: Type['type']): x is T { return x.type === type }
 export abstract class Type {
 	abstract toTypescript(): ts.TypeNode
 	/** Cut type information to be human-friendly, but maybe less precise */
@@ -60,7 +60,7 @@ export class Void extends Type {
 export class ArrayOf<T extends Type = Type> extends Type {
 	type = ComplexType.array
 	constructor(public of: T) { super() }
-	getDeclaration() { return this.of.getDeclaration() }
+	getDeclaration(): ts.Declaration[] { return this.of.getDeclaration() }
 	toTypescript() { return ts.createArrayTypeNode(this.of.toTypescript()) }
 	reduce() { return new ArrayOf(this.of.reduce()) }
 }
@@ -89,7 +89,11 @@ export class ObjectOf extends Type {
 			})
 		)
 	}
-	getDeclaration() { return [].concat(this.of.map(x => x.value.getDeclaration())) }
+	getDeclaration(): ts.Declaration[] {
+		const x: ts.Declaration[] = []
+		this.of.forEach(_ => x.push(..._.value.getDeclaration()))
+		return x
+	}
 
 }
 //#endregion
@@ -97,9 +101,9 @@ export class ObjectOf extends Type {
 export class EnumOf extends Type {
 	type = TypescriptType.enum
 	constructor(public name: string, public of: string[], public val: string[] | number[] = []) { super() }
-	getDeclaration() {
+	getDeclaration(): ts.Declaration[] {
 		/** `export enum name { of[0]: val[0], of[1]: val[1], ... }` */
-		const self = ts.createEnumDeclaration(null, [ts.createToken(ts.SyntaxKind.ExportKeyword)], name, [
+		const self = ts.createEnumDeclaration(null, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.name, [
 			...this.of.map((member, index) => {
 				const memberInitValue = ts.createLiteral(this.val[index])
 				return ts.createEnumMember(member, this.val[index] && memberInitValue)
@@ -134,7 +138,7 @@ export class TypeReferenceType extends Type {
 		}
 		return ts.createTypeReferenceNode(this.ref, null)
 	}
-	getDeclaration() {
+	getDeclaration(): ts.Declaration[] {
 		/** If this.of is eliminated, do not generate type reference
 		 *  if this.of is a Object, generate an interface
 		 *  otherwise, generate a type alias (type X = Type)
@@ -149,7 +153,7 @@ export class TypeReferenceType extends Type {
 				return y
 			}))
 			d = ts.createInterfaceDeclaration(
-				void 0, [ts.createToken(ts.SyntaxKind.ExportKeyword)], name,
+				void 0, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.ref,
 				void 0, void 0, jsDocObj.toTypescript().members)
 		}
 		d = ts.createTypeAliasDeclaration(null, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.ref, null, this.of.toTypescript())
@@ -237,7 +241,11 @@ export class Or extends Type {
 		if (r.length === 1) return r[0]
 		return new Or(r)
 	}
-	getDeclaration() { return [].concat(this.of.map(x => x.getDeclaration())) }
+	getDeclaration(): ts.Declaration[] {
+		const x: ts.Declaration[] = []
+		this.of.forEach(_ => x.push(..._.getDeclaration()))
+		return x
+	}
 }
 export class And extends Type {
 	type = ConstructedType.and
@@ -254,7 +262,11 @@ export class And extends Type {
 		if (r.length === 1) return r[0]
 		return new And(r)
 	}
-	getDeclaration() { return [].concat(this.of.map(x => x.getDeclaration())) }
+	getDeclaration() {
+		const x: ts.Declaration[] = []
+		this.of.forEach(_ => x.push(..._.getDeclaration()))
+		return x
+	}
 }
 export class TupleOf extends Type {
 	type = ConstructedType.tuple
@@ -263,7 +275,11 @@ export class TupleOf extends Type {
 		return ts.createTupleTypeNode(this.of.map(x => x.toTypescript()))
 	}
 	reduce() { return new TupleOf(this.of.map(x => x.reduce())) }
-	getDeclaration() { return [].concat(this.of.map(x => x.getDeclaration())) }
+	getDeclaration() {
+		const x: ts.Declaration[] = []
+		this.of.forEach(_ => x.push(..._.getDeclaration()))
+		return x
+	}
 }
 //#endregion
 /** Geneate a shape of the object
