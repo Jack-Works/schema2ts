@@ -3,12 +3,6 @@ import { Server, IEndPoint } from '../../code/server'
 import * as Types from '../../code/types'
 import { Operation, Definition } from 'swagger2/dist/schema'
 
-(Array.prototype as any).flatten = function () {
-	return this.reduce(function (prev, cur) {
-		const more = [].concat(cur).some(Array.isArray)
-		return prev.concat(more ? cur.flatten() : cur)
-	}, [])
-}
 export function is(object: any): object is Swagger2.Document {
 	return object.swagger == '2.0'
 }
@@ -113,15 +107,15 @@ function main(doc: Swagger2.Document): Server {
 					bodyParams: ObjOrRef,
 					headerParams: ObjOrRef,
 					formParams: ObjOrRef,
-					query: ObjOrRef
+					queryParams: ObjOrRef
 				if (p.parameters) {
 					urlParams = Swagger2ParameterToObject(p.parameters.filter(p => p.in === 'path'), doc)
 					bodyParams = Swagger2ParameterToObject(p.parameters.filter(p => p.in === 'body'), doc)
 					headerParams = Swagger2ParameterToObject(p.parameters.filter(p => p.in === 'header'), doc)
 					formParams = Swagger2ParameterToObject(p.parameters.filter(p => p.in === 'formData'), doc)
-					query = Swagger2ParameterToObject(p.parameters.filter(x => x.in === 'query'), doc)
+					queryParams = Swagger2ParameterToObject(p.parameters.filter(x => x.in === 'query'), doc)
 				} else {
-					urlParams = bodyParams = headerParams = formParams = query = empty
+					urlParams = bodyParams = headerParams = formParams = queryParams = empty
 				}
 				let result: [number, Types.Type][] = []
 				if (p.responses) {
@@ -138,7 +132,7 @@ function main(doc: Swagger2.Document): Server {
 					bodyParamsType = p.parameters.some(p => p.in === 'formData') ? 'form' : 'json'
 				}
 				endpoints.push({
-					comment, url, urlParams, headerParams, query, result, name, bodyParamsType,
+					comment, url, urlParams, headerParams, queryParams, result, name, bodyParamsType,
 					bodyParams: bodyParamsType === 'json' ? bodyParams : formParams,
 					method: method as any, modifier: {}
 				})

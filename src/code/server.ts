@@ -7,7 +7,7 @@ export interface IEndPoint {
 	/** Post mine of body parameters */bodyParamsType: 'json' | 'form'
 	/** Body parameters (json) */bodyParams?: Types.ObjectOf | Types.TypeReferenceType
 	/** Header parameters */headerParams?: Types.ObjectOf | Types.TypeReferenceType
-	/** Query parameters */query?: Types.ObjectOf | Types.TypeReferenceType
+	/** Query parameters */queryParams?: Types.ObjectOf | Types.TypeReferenceType
 	/** Return type */result?: [number, Types.Type][]
 	/** Code-friendly name of the function */name?: string
 	/** More and more */modifier?: {

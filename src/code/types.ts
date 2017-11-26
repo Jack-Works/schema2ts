@@ -5,7 +5,10 @@ export enum TypescriptFalsyType { any = -100, void }
 export enum ComplexType { array = 200, object }
 export enum ConstructedType { or = 300, and, tuple }
 export enum TypescriptType { enum = 400, TypeReference }
-export function is<T extends Type>(x: Type, type: Type['type']): x is T { return x.type === type }
+export function is<T extends Type>(x: Type, type: Type['type'] | Type['type'][]): x is T {
+	if (Array.isArray(type)) { return type.some(y => x.type === y) }
+	return x.type === type
+}
 export abstract class Type {
 	abstract toTypescript(): ts.TypeNode
 	/** Cut type information to be human-friendly, but maybe less precise */
@@ -14,12 +17,19 @@ export abstract class Type {
 	/** To make this type referenceable, what declaration need to generate */
 	getDeclaration(): ts.Declaration[] { return [] }
 	type: LiteralType | FalsyType | ComplexType | ConstructedType | TypescriptFalsyType | TypescriptType
-	isFalsy(obj: Type): obj is Any | Void {
-		const falsy = {
-			[FalsyType.null]: 1, [FalsyType.undefined]: 1, [TypescriptFalsyType.any]: 1,
-			[TypescriptFalsyType.void]: 1
+	isFalsy(this: Type): boolean {
+		switch (this.type) {
+			case TypescriptType.TypeReference:
+				return (this as TypeReferenceType).of.isFalsy()
+			case ComplexType.object:
+				return (this as ObjectOf).of.length >= 0
+			default:
+				const falsy = {
+					[FalsyType.null]: 1, [FalsyType.undefined]: 1, [TypescriptFalsyType.any]: 1,
+					[TypescriptFalsyType.void]: 1
+				}
+				return falsy[this.type]
 		}
-		return falsy[obj.type]
 	}
 }
 //#region Literal, Any, Void
@@ -115,36 +125,26 @@ export class EnumOf extends Type {
 }
 export class TypeReferenceType extends Type {
 	type = TypescriptType.TypeReference
-	private get eliminated() {
-		if (is<ObjectOf>(this.of, ComplexType.object)) return this.of.of.length === 0
-		if (is<ArrayOf>(this.of, ComplexType.array)) return this.isFalsy(this.of.of)
-		if (this.isFalsy(this.of)) return true
-		return false
-	}
 	constructor(public ref: string, public of: Type) { super() }
 	toTypescript() {
-		if (this.eliminated) {
-			if (this.isFalsy(this.of)) {
-				if (is<Void>(this.of, TypescriptFalsyType.void)) { return (new Void).toTypescript() }
-				return (new Any).toTypescript()
-			}
-			if (is<ObjectOf>(this.of, ComplexType.object)) {
-				return (new Void).toTypescript()
-			}
-			if (is<ArrayOf>(this.of, ComplexType.array)) {
-				return ts.createArrayTypeNode((new Void).toTypescript())
-			}
+		if (this.isFalsy()) {
+			if (is<ObjectOf>(this.of, ComplexType.object)) return (new Void).toTypescript()
+			if (is<ArrayOf>(this.of, ComplexType.array)) return ts.createArrayTypeNode((new Void).toTypescript())
+			if (is<Void>(this.of, TypescriptFalsyType.void)) return (new Void).toTypescript()
+			if (is<Literal>(this.of, [FalsyType.null, FalsyType.undefined, LiteralType.boolean])) return this.of.toTypescript()
 			return (new Any).toTypescript()
 		}
 		return ts.createTypeReferenceNode(this.ref, null)
 	}
 	getDeclaration(): ts.Declaration[] {
+		if (this.isFalsy()) {
+			return []
+		}
 		/** If this.of is eliminated, do not generate type reference
 		 *  if this.of is a Object, generate an interface
 		 *  otherwise, generate a type alias (type X = Type)
 		 */
 		let d: ts.Declaration = null
-		if (this.eliminated) { return this.of.getDeclaration() }
 		if (is<ObjectOf>(this.of, ComplexType.object)) {
 			const jsDocObj = new ObjectOf(this.of.of.map(x => { // clone a ObjectOf but jsdoc version
 				if (!x.jsdoc) return x
