@@ -22,7 +22,7 @@ export abstract class Type {
 			case TypescriptType.TypeReference:
 				return (this as TypeReferenceType).of.isFalsy()
 			case ComplexType.object:
-				return (this as ObjectOf).of.length >= 0
+				return (this as ObjectOf).of.length === 0
 			default:
 				const falsy = {
 					[FalsyType.null]: 1, [FalsyType.undefined]: 1, [TypescriptFalsyType.any]: 1,
@@ -82,9 +82,12 @@ export class ObjectOf extends Type {
 	toTypescript() {
 		return ts.createTypeLiteralNode(
 			this.of.map(x => {
+				if (!x.key) {
+					throw new TypeError('A unknown property name.')
+				}
 				return ts.createPropertySignature(
 					null,
-					/** name */x.key,
+					/** name */ts.createLiteral(x.key),
 					/** question mark */x.optional ? ts.createToken(ts.SyntaxKind.QuestionToken) : null,
 					/** subtype */x.value.toTypescript(),
 					null
@@ -121,7 +124,7 @@ export class EnumOf extends Type {
 		])
 		return [self]
 	}
-	toTypescript() { return ts.createTypeReferenceNode(this.name, null) }
+	toTypescript() { return ts.createTypeReferenceNode(this.name, []) }
 }
 export class TypeReferenceType extends Type {
 	type = TypescriptType.TypeReference
@@ -134,7 +137,7 @@ export class TypeReferenceType extends Type {
 			if (is<Literal>(this.of, [FalsyType.null, FalsyType.undefined, LiteralType.boolean])) return this.of.toTypescript()
 			return (new Any).toTypescript()
 		}
-		return ts.createTypeReferenceNode(this.ref, null)
+		return ts.createTypeReferenceNode(this.ref, [])
 	}
 	getDeclaration(): ts.Declaration[] {
 		if (this.isFalsy()) {
@@ -156,7 +159,7 @@ export class TypeReferenceType extends Type {
 				void 0, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.ref,
 				void 0, void 0, jsDocObj.toTypescript().members)
 		}
-		d = ts.createTypeAliasDeclaration(null, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.ref, null, this.of.toTypescript())
+		d = ts.createTypeAliasDeclaration(null, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.ref, [], this.of.toTypescript())
 		return [...this.of.getDeclaration(), d]
 	}
 }

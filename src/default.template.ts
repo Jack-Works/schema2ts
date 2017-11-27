@@ -62,6 +62,3 @@ export const _ = {
 		}
 	}
 }
-function req(): Promise<_Response<200, { ok: 1 }> | _Response<201, { ok: '' }>> {
-	return _.request('', 'get', { query: { abc: 123 } })
-}

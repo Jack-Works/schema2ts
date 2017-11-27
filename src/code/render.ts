@@ -41,9 +41,9 @@ function GenerateAsyncFunction(
 
 class Transformer {
 	declarations: ts.Declaration[] = []
+	statements: ts.Statement[] = []
 	endPointToDeclaration(ep: IEndPoint) {
-		// TODO: Bug: name does not generated correctly
-		const name = getValidVarName(ep.url)
+		const name = getValidVarName(ep.url + '_' + ep.method)
 		ep.name = ep.name || name
 		function toReference(type: Types.Type, name): Types.TypeReferenceType {
 			if (Types.is<Types.TypeReferenceType>(type, Types.TypescriptType.TypeReference)) { return type }
@@ -53,42 +53,41 @@ class Transformer {
 		const bodyParams = toReference(ep.bodyParams, name + '_parameter_body')
 		const queryParams = toReference(ep.queryParams, name + '_parameter_query')
 		const headerParams = toReference(ep.headerParams, name + '_parameter_header')
-		// TODO: Bug: v this step does not generate any interface
-		this.declarations.push(...[pathParams, bodyParams, queryParams]
+		this.declarations.push(...[pathParams, bodyParams, queryParams, headerParams]
 			.reduce<ts.Declaration[]>((decs, curr) => {
 				decs.push(...curr.getDeclaration())
 				return decs
 			}, []))
 
 		const parameters = [
-			{ key: 'url', type: pathParams },
+			{ key: 'path', type: pathParams },
 			{ key: 'query', type: queryParams },
 			{ key: 'data', type: bodyParams },
-			{ key: 'header', type: headerParams }
+			{ key: 'headers', type: headerParams },
+			{ key: 'body', type: bodyParams }
 		]
 		/** Create function below */
-		// TODO: Bug: url & method are not TypeReference, they are Value
-		const url = new Types.TypeReferenceType(name + '_url', new Types.Literal(ep.url, true))
-		const method = new Types.TypeReferenceType(name + '_method', new Types.Literal(ep.method.toUpperCase(), true))
-		this.declarations.push(...url.getDeclaration(), ...method.getDeclaration())
-		const lit = x => ts.createLiteral(x)
+		const url = ts.createVariableStatement([Export], [ts.createVariableDeclaration(name + '_url', null, ts.createLiteral(ep.url))])
+		const method = ts.createVariableStatement([Export], [ts.createVariableDeclaration(name + '_method', null, ts.createLiteral(ep.method))])
+		this.statements.push(url, method)
+		const id = x => ts.createIdentifier(x)
 		const FunctionBody: ts.FunctionBody = ts.createBlock([
 			ts.createReturn(
-				// _Config.request(...)
-				ts.createCall(lit('_Config.request'), null, [
+				// _.request(...)
+				ts.createCall(id('_.request'), null, [
 					// name_url, name_method, { query, body, path, headers, bodyType}
-					lit(name + '_url'),
-					lit(name + '_method'),
+					id(name + '_url'),
+					id(name + '_method'),
 					ts.createObjectLiteral([
-						ts.createPropertyAssignment('query', lit(queryParams.toTypescript())),
-						ts.createPropertyAssignment('body', lit(bodyParams.toTypescript())),
-						ts.createPropertyAssignment('path', lit(pathParams.toTypescript())),
-						ts.createPropertyAssignment('headers', lit(headerParams.toTypescript())),
-						ts.createPropertyAssignment('bodyType', lit(ep.bodyParamsType)),
+						ts.createPropertyAssignment('query', id('query')),
+						ts.createPropertyAssignment('body', id('body')),
+						ts.createPropertyAssignment('path', id('path')),
+						ts.createPropertyAssignment('headers', id('headers')),
+						ts.createPropertyAssignment('bodyType', ts.createLiteral(ep.bodyParamsType)),
 					])
 				])
 			)
-		])
+		], true)
 		function createResponse(statusCode: ts.TypeNode, ref: ts.TypeNode) {
 			return ts.createTypeReferenceNode('_Response', [statusCode, ref])
 		}
@@ -108,24 +107,20 @@ class Transformer {
 			name + '_invoke',
 			FunctionBody,
 			parameters
-				.filter(x => x.type.isFalsy())
+				.filter(x => !x.type.isFalsy())
 				.map(x => ts.createParameter(null, null, null, x.key, null, x.type.toTypescript())),
 			returnTypesUnion,
 			ep.comment
 		))
-	}
-	static render(typeRef: ts.Declaration): string {
-		if (typeof typeRef === 'string') return ''
-		// TODO: Fail: Typescript: "Literal kind '105' not accounted for."
-		else return render(typeRef)
 	}
 }
 export function Generator(server: Server, template: string) {
 	const transformer = new Transformer
 	server.endpoints.map(x => transformer.endPointToDeclaration(x))
 	// Read data
-	const declarations = transformer.declarations.map(Transformer.render).join('\n')
-	const result = template += '\n' + declarations
+	const statements = transformer.statements.map(render).join('\n')
+	const declarations = transformer.declarations.map(render).join('\n')
+	const result = template += '\n' + statements + '\n' + declarations
 	return render(ts.createSourceFile('generated.ts', result, ts.ScriptTarget.Latest, false)).
 		replace(/@__JSDoc__ /g, '')
 }

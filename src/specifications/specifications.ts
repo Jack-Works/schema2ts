@@ -6,6 +6,6 @@ export interface SpecificationProvider<Spec> {
 import * as Swagger2 from './swagger2'
 
 export default function Switch(content: object, filePath: string): () => Server {
-	if (Swagger2.is(content)) return Swagger2.transformer(content, filePath)
+	if (Swagger2.is(content, filePath)) return Swagger2.transformer(content, filePath)
 	throw new TypeError('Unsolved specification type.')
 }
