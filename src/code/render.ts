@@ -43,7 +43,7 @@ class Transformer {
 	declarations: ts.Declaration[] = []
 	statements: ts.Statement[] = []
 	endPointToDeclaration(ep: IEndPoint) {
-		const name = getValidVarName(ep.url + '_' + ep.method)
+		const name = getValidVarName(ep.url + '_' + ep.method).replace(/^_+/, '')
 		ep.name = ep.name || name
 		function toReference(type: Types.Type, name): Types.TypeReferenceType {
 			if (Types.is<Types.TypeReferenceType>(type, Types.TypescriptType.TypeReference)) { return type }
@@ -71,6 +71,7 @@ class Transformer {
 		const method = ts.createVariableStatement([Export], [ts.createVariableDeclaration(name + '_method', null, ts.createLiteral(ep.method))])
 		this.statements.push(url, method)
 		const id = x => ts.createIdentifier(x)
+		const notEmitParameters = parameters.filter(x => x.type.isFalsy()).map(x => x.key)
 		const FunctionBody: ts.FunctionBody = ts.createBlock([
 			ts.createReturn(
 				// _.request(...)
@@ -84,7 +85,7 @@ class Transformer {
 						ts.createPropertyAssignment('path', id('path')),
 						ts.createPropertyAssignment('headers', id('headers')),
 						ts.createPropertyAssignment('bodyType', ts.createLiteral(ep.bodyParamsType)),
-					])
+					].filter(x => -1 === notEmitParameters.indexOf((x.name as ts.Identifier).escapedText.toString())))
 				])
 			)
 		], true)
@@ -94,13 +95,20 @@ class Transformer {
 		const Any = (new Types.Any).toTypescript()
 		const returnTypesUnion: ts.TypeNode = (result => {
 			const refs = ep.result.map<[number, ts.TypeNode]>(([code, type]) => {
+				if (type.isFalsy()) return null
+				if (Types.isLiteralType(type)) {
+					return [code, type.toTypescript()]
+				}
 				const ref = new Types.TypeReferenceType(name + '_result_' + code, type)
 				this.declarations.push(...ref.getDeclaration())
 				return [code, type.toTypescript()]
-			})
+			}).filter(x => x)
 			if (refs.length === 0) { return createResponse(Any, Any) }
-			if (refs.length === 1) { return createResponse(Any, refs[0][1]) }
-			return ts.createUnionTypeNode(refs.map(x => x[1]))
+			if (refs.length === 1) { return createResponse(new Types.Literal(refs[0][0], true).toTypescript(), refs[0][1]) }
+			return ts.createUnionTypeNode(
+				refs.map(x => createResponse(
+					new Types.Literal(x[0], true).toTypescript(), x[1]
+				)))
 		})(ep.result)
 
 		this.declarations.push(GenerateAsyncFunction(
@@ -112,7 +120,25 @@ class Transformer {
 			returnTypesUnion,
 			ep.comment
 		))
+		this.removeDuplicateDeclarations()
 	}
+	removeDuplicateDeclarations() {
+		const names: string[] = []
+		this.declarations = this.declarations.filter(dec => {
+			const name = (ts.getNameOfDeclaration(dec) as ts.Identifier).escapedText.toString()
+			if (names.indexOf(name) !== -1) return false
+			names.push(name)
+			return true
+		})
+	}
+}
+function vars(str): string {
+	const now = new Date
+	const packageJson = require('../../package.json')
+	return str.
+		replace(/%version%/g, packageJson.version).
+		replace(/%when%/g, now.toLocaleDateString() + ' ' + now.toLocaleTimeString()).
+		replace(/%typescript-version%/g, packageJson.dependencies ? packageJson.dependencies.typescript : 'unknown')
 }
 export function Generator(server: Server, template: string) {
 	const transformer = new Transformer
@@ -121,6 +147,7 @@ export function Generator(server: Server, template: string) {
 	const statements = transformer.statements.map(render).join('\n')
 	const declarations = transformer.declarations.map(render).join('\n')
 	const result = template += '\n' + statements + '\n' + declarations
-	return render(ts.createSourceFile('generated.ts', result, ts.ScriptTarget.Latest, false)).
+	const code = render(ts.createSourceFile('generated.ts', result, ts.ScriptTarget.Latest, false)).
 		replace(/@__JSDoc__ /g, '')
+	return vars(code)
 }

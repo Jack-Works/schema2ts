@@ -9,6 +9,7 @@ export function is<T extends Type>(x: Type, type: Type['type'] | Type['type'][])
 	if (Array.isArray(type)) { return type.some(y => x.type === y) }
 	return x.type === type
 }
+export function isLiteralType(x: Type): x is Literal { return is(x, [LiteralType.boolean, LiteralType.number, LiteralType.string]) }
 export abstract class Type {
 	abstract toTypescript(): ts.TypeNode
 	/** Cut type information to be human-friendly, but maybe less precise */
@@ -44,7 +45,9 @@ export class Literal extends Type {
 	toTypescript() {
 		if (this.value === undefined) return ts.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword)
 		if (this.value === null) return ts.createKeywordTypeNode(ts.SyntaxKind.NullKeyword)
-		if (this.literal) return ts.createLiteralTypeNode(ts.createLiteral(this.value.toString()))
+		if (this.literal) {
+			return ts.createLiteralTypeNode(ts.createLiteral(this.value) as ts.StringLiteral | ts.NumericLiteral | ts.BooleanLiteral)
+		}
 		return ts.createKeywordTypeNode(({
 			boolean: ts.SyntaxKind.BooleanKeyword,
 			string: ts.SyntaxKind.StringKeyword,
@@ -134,7 +137,7 @@ export class TypeReferenceType extends Type {
 			if (is<ObjectOf>(this.of, ComplexType.object)) return (new Void).toTypescript()
 			if (is<ArrayOf>(this.of, ComplexType.array)) return ts.createArrayTypeNode((new Void).toTypescript())
 			if (is<Void>(this.of, TypescriptFalsyType.void)) return (new Void).toTypescript()
-			if (is<Literal>(this.of, [FalsyType.null, FalsyType.undefined, LiteralType.boolean])) return this.of.toTypescript()
+			if (isLiteralType(this.of)) return this.of.toTypescript()
 			return (new Any).toTypescript()
 		}
 		return ts.createTypeReferenceNode(this.ref, [])

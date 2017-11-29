@@ -19,7 +19,7 @@
     "schema2ts": "./dist/index.js"
   },
   "name": "schema2ts",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Generate .ts class and namespace contains interface from API Schema",
   "main": "dist/index.js",
   "repository": "https://github.com/Jack-Works/schema2ts",

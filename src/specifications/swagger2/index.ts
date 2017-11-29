@@ -5,7 +5,7 @@ import { Operation, Definition } from 'swagger2/dist/schema'
 
 export function is(object: any, path: string): object is Swagger2.Document {
 	if (object.swagger != '2.0') { return false }
-	if (Swagger2.validateDocument(object)) {
+	if (!Swagger2.validateDocument(object)) {
 		throw new TypeError('Input file is not a valid Swagger2 specification, see http://bigstickcarpet.com/swagger-parser/www/index.html')
 	}
 	return true
