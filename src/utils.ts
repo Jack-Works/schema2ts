@@ -1,4 +1,5 @@
 import * as ts from 'typescript'
+import { Export, AnyType } from './constants'
 const ValidCharsInURLSpecButNOTInVarName = '-._~:/?#[]@!&\'()*+,;='.split('')
 export function getValidVarName(name: string) {
 	return name
@@ -7,8 +8,21 @@ export function getValidVarName(name: string) {
 		.join('')
 		.replace('{', '$').replace('}', '')
 }
-export function getParamsInURL(u: string) {
-	return u.match(/{([a-zA-Z0-9_]+)}/g)
+
+/** Create a Typescript Async function Declaration */
+export function GenerateAsyncFunction(
+	name: string | ts.Identifier,
+	body: ts.FunctionBody,
+	parameters: ts.ParameterDeclaration[] = [],
+	returnType: ts.TypeNode = AnyType,
+	JSDocCommet?: string,
+	modifiers: ts.Modifier[] = [],
+	decorators: ts.Decorator[] = []) {
+	const JSDoc: ts.Decorator = JSDocCommet && ts.createDecorator(ts.createIdentifier(`__JSDoc__ /** ${JSDocCommet} */`))
+	const tdecorator = [JSDoc, ...decorators]
+	const returnTypePromise = ts.createTypeReferenceNode('Promise', [returnType])
+	return ts.createFunctionDeclaration(
+		tdecorator, [Export, ...modifiers],
+		null, name, null, parameters, returnTypePromise, body
+	)
 }
-export const Export = ts.createToken(ts.SyntaxKind.ExportKeyword)
-export const Extends = ts.createToken(ts.SyntaxKind.ExtendsKeyword)

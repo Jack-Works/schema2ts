@@ -1,43 +1,15 @@
 import * as ts from 'typescript'
 import * as Types from './types'
-import { Export, getValidVarName } from '../utils'
+import { getValidVarName, GenerateAsyncFunction } from '../utils'
 import { Server, IEndPoint } from './server'
+import { Export, AnyType } from '../constants'
 
-//#region Render
-/** Printer that used by render  */
-const [printer, doc] = [
-	ts.createPrinter({
-		newLine: ts.NewLineKind.LineFeed, removeComments: false
-	}),
-	ts.createSourceFile('', '', ts.ScriptTarget.Latest)]
-
-/** Typescript.Node -> string */
-function render(node: ts.Node): string {
-	return printer.printNode(
-		ts.EmitHint.Unspecified,
-		node,
-		doc
-	)
-}
-//#endregion
-
-/** Create a Typescript Async function Declaration */
-function GenerateAsyncFunction(
-	name: string | ts.Identifier,
-	body: ts.FunctionBody,
-	parameters: ts.ParameterDeclaration[] = [],
-	returnType: ts.TypeNode = (new Types.Any).toTypescript(),
-	JSDocCommet?: string,
-	modifiers: ts.Modifier[] = [],
-	decorators: ts.Decorator[] = []) {
-	const JSDoc: ts.Decorator = JSDocCommet && ts.createDecorator(ts.createIdentifier(`__JSDoc__ /** ${JSDocCommet} */`))
-	const tdecorator = [JSDoc, ...decorators]
-	const returnTypePromise = ts.createTypeReferenceNode('Promise', [returnType])
-	return ts.createFunctionDeclaration(
-		tdecorator, [Export, ...modifiers],
-		null, name, null, parameters, returnTypePromise, body
-	)
-}
+/** Render Typescript Node to string */
+const render = (() => {
+	const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed, removeComments: false })
+	const doc = ts.createSourceFile('', '', ts.ScriptTarget.Latest)
+	return (node: ts.Node) => printer.printNode(ts.EmitHint.Unspecified, node, doc)
+})()
 
 class Transformer {
 	declarations: ts.Declaration[] = []
@@ -46,7 +18,7 @@ class Transformer {
 		const name = getValidVarName(ep.url + '_' + ep.method).replace(/^_+/, '')
 		ep.name = ep.name || name
 		function toReference(type: Types.Type, name): Types.TypeReferenceType {
-			if (Types.is<Types.TypeReferenceType>(type, Types.TypescriptType.TypeReference)) { return type }
+			if (Types.isTypeReference(type)) { return type }
 			return new Types.TypeReferenceType(name, type)
 		}
 		const pathParams = toReference(ep.urlParams, name + '_parameter_path')
@@ -62,7 +34,6 @@ class Transformer {
 		const parameters = [
 			{ key: 'path', type: pathParams },
 			{ key: 'query', type: queryParams },
-			{ key: 'data', type: bodyParams },
 			{ key: 'headers', type: headerParams },
 			{ key: 'body', type: bodyParams }
 		]
@@ -92,7 +63,6 @@ class Transformer {
 		function createResponse(statusCode: ts.TypeNode, ref: ts.TypeNode) {
 			return ts.createTypeReferenceNode('_Response', [statusCode, ref])
 		}
-		const Any = (new Types.Any).toTypescript()
 		const returnTypesUnion: ts.TypeNode = (result => {
 			const refs = ep.result.map<[number, ts.TypeNode]>(([code, type]) => {
 				if (type.isFalsy()) return null
@@ -103,7 +73,7 @@ class Transformer {
 				this.declarations.push(...ref.getDeclaration())
 				return [code, type.toTypescript()]
 			}).filter(x => x)
-			if (refs.length === 0) { return createResponse(Any, Any) }
+			if (refs.length === 0) { return createResponse(AnyType, AnyType) }
 			if (refs.length === 1) { return createResponse(new Types.Literal(refs[0][0], true).toTypescript(), refs[0][1]) }
 			return ts.createUnionTypeNode(
 				refs.map(x => createResponse(
@@ -132,6 +102,8 @@ class Transformer {
 		})
 	}
 }
+
+/** Inject vars */
 function vars(str): string {
 	const now = new Date
 	const packageJson = require('../../package.json')

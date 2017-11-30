@@ -5,11 +5,11 @@ export enum TypescriptFalsyType { any = -100, void }
 export enum ComplexType { array = 200, object }
 export enum ConstructedType { or = 300, and, tuple }
 export enum TypescriptType { enum = 400, TypeReference }
-export function is<T extends Type>(x: Type, type: Type['type'] | Type['type'][]): x is T {
-	if (Array.isArray(type)) { return type.some(y => x.type === y) }
-	return x.type === type
-}
-export function isLiteralType(x: Type): x is Literal { return is(x, [LiteralType.boolean, LiteralType.number, LiteralType.string]) }
+export function isLiteralType(x: Type): x is Literal { return [LiteralType.boolean, LiteralType.number, LiteralType.string].some(y => x.type === y) }
+export function isObjectType(x: Type): x is ObjectOf { return x.type === ComplexType.object }
+export function isArrayType(x: Type): x is ArrayOf { return x.type === ComplexType.array }
+export function isVoidType(x: Type): x is Void { return x.type === TypescriptFalsyType.void }
+export function isTypeReference(x: Type): x is TypeReferenceType { return x.type === TypescriptType.TypeReference }
 export abstract class Type {
 	abstract toTypescript(): ts.TypeNode
 	/** Cut type information to be human-friendly, but maybe less precise */
@@ -134,9 +134,9 @@ export class TypeReferenceType extends Type {
 	constructor(public ref: string, public of: Type) { super() }
 	toTypescript() {
 		if (this.isFalsy()) {
-			if (is<ObjectOf>(this.of, ComplexType.object)) return (new Void).toTypescript()
-			if (is<ArrayOf>(this.of, ComplexType.array)) return ts.createArrayTypeNode((new Void).toTypescript())
-			if (is<Void>(this.of, TypescriptFalsyType.void)) return (new Void).toTypescript()
+			if (isObjectType(this.of)) return (new Void).toTypescript()
+			if (isArrayType(this.of)) return ts.createArrayTypeNode((new Void).toTypescript())
+			if (isVoidType(this.of)) return (new Void).toTypescript()
 			if (isLiteralType(this.of)) return this.of.toTypescript()
 			return (new Any).toTypescript()
 		}
@@ -151,7 +151,7 @@ export class TypeReferenceType extends Type {
 		 *  otherwise, generate a type alias (type X = Type)
 		 */
 		let d: ts.Declaration = null
-		if (is<ObjectOf>(this.of, ComplexType.object)) {
+		if (isObjectType(this.of)) {
 			const jsDocObj = new ObjectOf(this.of.of.map(x => { // clone a ObjectOf but jsdoc version
 				if (!x.jsdoc) return x
 				const y = { ...x }

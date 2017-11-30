@@ -52,15 +52,11 @@ function req<T>(url, raw?): Promise<T> {
 }
 async function main() {
 	if (config.templateUrl) config.template = await req<string>(config.templateUrl, true)
-	console.log('1. Template get.')
 
 	const api = await req(config.in)
-	console.log('2. API Schema get.')
-
 	const schema = schema2server(api, config.in)()
 	const code = Generator(schema, config.template)
 	if (!config.dryrun) { writeFileSync(config.out || './generated.ts', code) }
-	console.log('3. Code generated.')
 }
 main()
 
