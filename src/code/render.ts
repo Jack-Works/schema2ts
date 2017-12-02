@@ -15,8 +15,9 @@ class Transformer {
 	declarations: ts.Declaration[] = []
 	statements: ts.Statement[] = []
 	endPointToDeclaration(ep: IEndPoint) {
-		const name = getValidVarName(ep.url + '_' + ep.method).replace(/^_+/, '')
-		ep.name = ep.name || name
+		const nameByUrl = getValidVarName(ep.url + '_' + ep.method).replace(/^_+/, '')
+		ep.name = ep.name || nameByUrl
+		const name = ep.name
 		function toReference(type: Types.Type | undefined, name: string): Types.TypeReferenceType {
 			if (!type) { return new Types.TypeReferenceType(name, new Types.Any) }
 			if (Types.isTypeReference(type)) { return type }
