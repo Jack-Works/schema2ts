@@ -17,7 +17,8 @@ class Transformer {
 	endPointToDeclaration(ep: IEndPoint) {
 		const name = getValidVarName(ep.url + '_' + ep.method).replace(/^_+/, '')
 		ep.name = ep.name || name
-		function toReference(type: Types.Type, name): Types.TypeReferenceType {
+		function toReference(type: Types.Type | undefined, name: string): Types.TypeReferenceType {
+			if (!type) { return new Types.TypeReferenceType(name, new Types.Any) }
 			if (Types.isTypeReference(type)) { return type }
 			return new Types.TypeReferenceType(name, type)
 		}
@@ -38,15 +39,15 @@ class Transformer {
 			{ key: 'body', type: bodyParams }
 		]
 		/** Create function below */
-		const url = ts.createVariableStatement([Export], [ts.createVariableDeclaration(name + '_url', null, ts.createLiteral(ep.url))])
-		const method = ts.createVariableStatement([Export], [ts.createVariableDeclaration(name + '_method', null, ts.createLiteral(ep.method))])
+		const url = ts.createVariableStatement([Export], [ts.createVariableDeclaration(name + '_url', undefined, ts.createLiteral(ep.url))])
+		const method = ts.createVariableStatement([Export], [ts.createVariableDeclaration(name + '_method', undefined, ts.createLiteral(ep.method))])
 		this.statements.push(url, method)
-		const id = x => ts.createIdentifier(x)
+		const id = (x: string) => ts.createIdentifier(x)
 		const notEmitParameters = parameters.filter(x => x.type.isFalsy()).map(x => x.key)
 		const FunctionBody: ts.FunctionBody = ts.createBlock([
 			ts.createReturn(
 				// _.request(...)
-				ts.createCall(id('_.request'), null, [
+				ts.createCall(id('_.request'), undefined, [
 					// name_url, name_method, { query, body, path, headers, bodyType}
 					id(name + '_url'),
 					id(name + '_method'),
@@ -64,19 +65,21 @@ class Transformer {
 			return ts.createTypeReferenceNode('_Response', [statusCode, ref])
 		}
 		const returnTypesUnion: ts.TypeNode = (result => {
-			const refs = ep.result.map<[number, ts.TypeNode]>(([code, type]) => {
-				if (type.isFalsy()) return null
+			type Response = [number, ts.TypeNode]
+			if (!ep.result) { return AnyType }
+			const refs = ep.result.map<Response>(([code, type]) => {
+				if (type.isFalsy()) return null as any
 				if (Types.isLiteralType(type)) {
 					return [code, type.toTypescript()]
 				}
 				const ref = new Types.TypeReferenceType(name + '_result_' + code, type)
 				this.declarations.push(...ref.getDeclaration())
 				return [code, type.toTypescript()]
-			}).filter(x => x)
+			}).filter((x: any) => x)
 			if (refs.length === 0) { return createResponse(AnyType, AnyType) }
 			if (refs.length === 1) { return createResponse(new Types.Literal(refs[0][0], true).toTypescript(), refs[0][1]) }
 			return ts.createUnionTypeNode(
-				refs.map(x => createResponse(
+				refs.map((x: Response) => createResponse(
 					new Types.Literal(x[0], true).toTypescript(), x[1]
 				)))
 		})(ep.result)
@@ -86,7 +89,7 @@ class Transformer {
 			FunctionBody,
 			parameters
 				.filter(x => !x.type.isFalsy())
-				.map(x => ts.createParameter(null, null, null, x.key, null, x.type.toTypescript())),
+				.map(x => ts.createParameter(undefined, undefined, undefined, x.key, undefined, x.type.toTypescript())),
 			returnTypesUnion,
 			ep.comment
 		))
@@ -104,7 +107,7 @@ class Transformer {
 }
 
 /** Inject vars */
-function vars(str): string {
+function vars(str: string): string {
 	const now = new Date
 	const packageJson = require('../../package.json')
 	return str.

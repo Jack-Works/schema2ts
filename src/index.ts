@@ -9,19 +9,17 @@ import * as minimist from 'minimist'
 import * as request from 'request'
 const config: {
 	template: string,
-	in: string,
-	out: string,
-	templateUrl: string,
-	dryrun: boolean
+	in?: string,
+	out?: string,
+	templateUrl?: string,
+	dryrun: boolean,
+	[key: string]: any
 } = {
 		template: readFileSync(join(__dirname, '..', 'src', 'default.template.ts'), 'utf-8'),
 		dryrun: false,
 		...minimist(process.argv.slice(2)),
 	}
-if (!config.in) {
-	throw new SyntaxError('No input. Use --in= to set one.')
-}
-function req<T>(url, raw?): Promise<T> {
+function req<T>(url: string, raw?: boolean): Promise<T> {
 	if (existsSync(url)) {
 		return Promise.resolve(
 			(x => {
@@ -53,6 +51,9 @@ function req<T>(url, raw?): Promise<T> {
 async function main() {
 	if (config.templateUrl) config.template = await req<string>(config.templateUrl, true)
 
+	if (!config.in) {
+		throw new SyntaxError('No input. Use --in= to set one.')
+	}
 	const api = await req(config.in)
 	const schema = schema2server(api, config.in)()
 	const code = Generator(schema, config.template)

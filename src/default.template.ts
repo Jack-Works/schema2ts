@@ -21,7 +21,7 @@ export interface _Response<Status, Data> {
 
 export const _ = {
 	lib: axios.create({ withCredentials: true }),
-	removeEmpty(obj) {
+	removeEmpty(obj: any) {
 		const cloned = { ...obj }
 		for (const i in cloned) {
 			if (cloned[i] === undefined) { delete cloned[i] }

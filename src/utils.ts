@@ -18,11 +18,12 @@ export function GenerateAsyncFunction(
 	JSDocCommet?: string,
 	modifiers: ts.Modifier[] = [],
 	decorators: ts.Decorator[] = []) {
-	const JSDoc: ts.Decorator = JSDocCommet && ts.createDecorator(ts.createIdentifier(`__JSDoc__ /** ${JSDocCommet} */`))
-	const tdecorator = [JSDoc, ...decorators]
+	const JSDoc: ts.Decorator | undefined = JSDocCommet ?
+		ts.createDecorator(ts.createIdentifier(`__JSDoc__ /** ${JSDocCommet} */`)) : undefined
+	const tdecorator: ts.Decorator[] = [JSDoc as ts.Decorator, ...decorators].filter(x => x)
 	const returnTypePromise = ts.createTypeReferenceNode('Promise', [returnType])
 	return ts.createFunctionDeclaration(
 		tdecorator, [Export, ...modifiers],
-		null, name, null, parameters, returnTypePromise, body
+		undefined, name, undefined, parameters, returnTypePromise, body
 	)
 }

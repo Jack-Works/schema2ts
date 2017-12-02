@@ -11,7 +11,7 @@ export function is(object: any, path: string): object is Swagger2.Document {
 	return true
 }
 
-const baseTypeMap = {
+const baseTypeMap: Record<any, any> = {
 	string: '',
 	boolean: true,
 	integer: 1,
@@ -44,14 +44,14 @@ function Swagger2SchemaToTypes(x: SchemaObject | Definition, doc: Swagger2.Docum
 		case 'boolean':
 		case 'integer':
 		case 'number':
-			return Types.shape(baseTypeMap[x.type])
+			return Types.shape(baseTypeMap[x.type as any])
 		case 'array':
 			return new Types.ArrayOf(Swagger2SchemaToTypes((x as Definition).items, doc))
 
 		case 'object':
 			if (x.schema && !x.schema.$ref) { return Swagger2SchemaToTypes(x.schema, doc) }
 			const xs: SchemaObject = x as any
-			const like = {}
+			const like: Record<string, Types.Type> = {}
 			const keyTable = xs.properties
 			for (const key in keyTable) {
 				like[key] = Swagger2SchemaToTypes(keyTable[key], doc)
@@ -66,6 +66,7 @@ function Swagger2SchemaToTypes(x: SchemaObject | Definition, doc: Swagger2.Docum
 			const key = (x as any).$ref || x.schema.$ref
 			if (key) {
 				const k = key.replace('#/definitions/', '')
+				if (!doc.definitions) { throw new TypeError('No definitions in schema but a ref is using it.') }
 				return new Types.TypeReferenceType(k,
 					Swagger2SchemaToTypes(doc.definitions[k], doc)
 				)
@@ -74,16 +75,17 @@ function Swagger2SchemaToTypes(x: SchemaObject | Definition, doc: Swagger2.Docum
 	}
 }
 function Swagger2ParameterToObject(parameters: Operation['parameters'], doc: Swagger2.Document): Types.ObjectOf | Types.TypeReferenceType {
-	if (!parameters[0]) { return new Types.ObjectOf([]) }
+	if (!parameters || !parameters[0]) { return new Types.ObjectOf([]) }
 	if (parameters[0].$ref || (parameters[0].schema && parameters[0].schema.$ref)) {
 		return Swagger2SchemaToTypes(parameters[0], doc) as Types.TypeReferenceType
 	}
 	return new Types.ObjectOf(parameters.filter(x => x).map(param => {
+		if (!param.name) { throw new TypeError(`${JSON.stringify(param)} has no key parameter.`) }
 		return ({
 			key: param.name,
 			optional: !param.required,
 			jsdoc: param.description,
-			value: param.schema ? Swagger2SchemaToTypes(param.schema, doc) : Types.shape(baseTypeMap[param.type])
+			value: param.schema ? Swagger2SchemaToTypes(param.schema, doc) : Types.shape(baseTypeMap[param.type as any])
 		})
 	}))
 }
@@ -145,7 +147,7 @@ function main(doc: Swagger2.Document): Server {
 	}
 	getEndpoints()
 	return {
-		baseUrl,
+		baseUrl: baseUrl || '/',
 		endpoints,
 		enums,
 		interfaces

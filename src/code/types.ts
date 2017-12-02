@@ -25,11 +25,11 @@ export abstract class Type {
 			case ComplexType.object:
 				return (this as ObjectOf).of.length === 0
 			default:
-				const falsy = {
+				const falsy: Record<any, number> = {
 					[FalsyType.null]: 1, [FalsyType.undefined]: 1, [TypescriptFalsyType.any]: 1,
 					[TypescriptFalsyType.void]: 1
 				}
-				return falsy[this.type]
+				return !!falsy[this.type]
 		}
 	}
 }
@@ -40,7 +40,7 @@ export class Literal extends Type {
 		/** Does this type have a literal value? */public literal: boolean
 	) {
 		super()
-		this.type = LiteralType[typeof value] || FalsyType[typeof value] || FalsyType.null
+		this.type = (LiteralType[typeof value as any] || FalsyType[typeof value as any] || FalsyType.null) as any
 	}
 	toTypescript() {
 		if (this.value === undefined) return ts.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword)
@@ -48,13 +48,14 @@ export class Literal extends Type {
 		if (this.literal) {
 			return ts.createLiteralTypeNode(ts.createLiteral(this.value) as ts.StringLiteral | ts.NumericLiteral | ts.BooleanLiteral)
 		}
-		return ts.createKeywordTypeNode(({
+		const keywords: Record<string, any> = {
 			boolean: ts.SyntaxKind.BooleanKeyword,
 			string: ts.SyntaxKind.StringKeyword,
 			number: ts.SyntaxKind.NumberKeyword
-		})[typeof this.value])
+		}
+		return ts.createKeywordTypeNode(keywords[typeof this.value])
 	}
-	reduce(keepPrecise?: boolean) {
+	reduce(keepPrecise?: boolean): Type {
 		/** We will drop all literals here */
 		if (this.literal && !keepPrecise) { return shape(this.value) }
 		else return this
@@ -89,11 +90,11 @@ export class ObjectOf extends Type {
 					throw new TypeError('A unknown property name.')
 				}
 				return ts.createPropertySignature(
-					null,
+					undefined,
 					/** name */ts.createLiteral(x.key),
-					/** question mark */x.optional ? ts.createToken(ts.SyntaxKind.QuestionToken) : null,
+					/** question mark */x.optional ? ts.createToken(ts.SyntaxKind.QuestionToken) : undefined,
 					/** subtype */x.value.toTypescript(),
-					null
+					undefined
 				)
 			})
 		)
@@ -119,10 +120,10 @@ export class EnumOf extends Type {
 	constructor(public name: string, public of: string[], public val: string[] | number[] = []) { super() }
 	getDeclaration(): ts.Declaration[] {
 		/** `export enum name { of[0]: val[0], of[1]: val[1], ... }` */
-		const self = ts.createEnumDeclaration(null, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.name, [
+		const self = ts.createEnumDeclaration(undefined, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.name, [
 			...this.of.map((member, index) => {
 				const memberInitValue = ts.createLiteral(this.val[index])
-				return ts.createEnumMember(member, this.val[index] && memberInitValue)
+				return ts.createEnumMember(member, this.val[index] && memberInitValue as any)
 			})
 		])
 		return [self]
@@ -150,7 +151,7 @@ export class TypeReferenceType extends Type {
 		 *  if this.of is a Object, generate an interface
 		 *  otherwise, generate a type alias (type X = Type)
 		 */
-		let d: ts.Declaration = null
+		let d: ts.Declaration | null = null
 		if (isObjectType(this.of)) {
 			const jsDocObj = new ObjectOf(this.of.of.map(x => { // clone a ObjectOf but jsdoc version
 				if (!x.jsdoc) return x
@@ -162,7 +163,7 @@ export class TypeReferenceType extends Type {
 				void 0, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.ref,
 				void 0, void 0, jsDocObj.toTypescript().members)
 		}
-		d = ts.createTypeAliasDeclaration(null, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.ref, [], this.of.toTypescript())
+		d = ts.createTypeAliasDeclaration(undefined, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.ref, [], this.of.toTypescript())
 		return [...this.of.getDeclaration(), d]
 	}
 }
@@ -241,7 +242,7 @@ export class Or extends Type {
 	toTypescript() {
 		return ts.createUnionTypeNode(this.of.map(x => x.toTypescript()))
 	}
-	reduce() {
+	reduce(): Type {
 		const r = GetFlattedAndOr(this, ReduceForConstructedType(this.of))
 		if (r.length === 0) return new Any
 		if (r.length === 1) return r[0]
@@ -262,7 +263,7 @@ export class And extends Type {
 	toTypescript() {
 		return ts.createIntersectionTypeNode(this.of.map(x => x.toTypescript()))
 	}
-	reduce() {
+	reduce(): Type {
 		const r = GetFlattedAndOr(this, ReduceForConstructedType(this.of))
 		if (r.length === 0) return new Any
 		if (r.length === 1) return r[0]
