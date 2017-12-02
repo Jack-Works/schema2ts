@@ -80,7 +80,7 @@ function Swagger2ParameterToObject(parameters: Operation['parameters'], doc: Swa
 		return Swagger2SchemaToTypes(parameters[0], doc) as Types.TypeReferenceType
 	}
 	return new Types.ObjectOf(parameters.filter(x => x).map(param => {
-		if (!param.name) { throw new TypeError(`${JSON.stringify(param)} has no key parameter.`) }
+		if (!param.name) { throw new TypeError(`${JSON.stringify(param)} has no name parameter.`) }
 		return ({
 			key: param.name,
 			optional: !param.required,
@@ -116,7 +116,13 @@ function main(doc: Swagger2.Document): Server {
 					queryParams: ObjOrRef
 				if (p.parameters) {
 					urlParams = Swagger2ParameterToObject(p.parameters.filter(p => p.in === 'path'), doc)
-					bodyParams = Swagger2ParameterToObject(p.parameters.filter(p => p.in === 'body'), doc)
+					// TODO: We resolve openapi body schema wrong, we wrap it in {data: T}. Need to fix
+					const wrongBodyParams = Swagger2ParameterToObject(p.parameters.filter(p => p.in === 'body'), doc)
+					if (Types.isObjectType(wrongBodyParams) && wrongBodyParams.of[0]) {
+						bodyParams = wrongBodyParams.of[0].value as Types.ObjectOf
+					} else {
+						bodyParams = wrongBodyParams
+					}
 					headerParams = Swagger2ParameterToObject(p.parameters.filter(p => p.in === 'header'), doc)
 					formParams = Swagger2ParameterToObject(p.parameters.filter(p => p.in === 'formData'), doc)
 					queryParams = Swagger2ParameterToObject(p.parameters.filter(x => x.in === 'query'), doc)
