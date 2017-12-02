@@ -132,7 +132,7 @@ function main(doc: Swagger2.Document): Server {
 						] as [number, Types.Type]
 					)
 				}
-				const name = (p as any).name || undefined
+				const name = p.operationId || undefined
 				let bodyParamsType: 'json' | 'form' = 'json'
 				if (p.parameters) {
 					bodyParamsType = p.parameters.some(p => p.in === 'formData') ? 'form' : 'json'
