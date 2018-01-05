@@ -31,7 +31,19 @@ Options:
 
 ## API Usage
 
-API is in development.
+```typescript
+export interface Schema2tsAPI {
+    /** Custom template that used to generate code */ template?: string
+    /** If this is true, template will be treated as url/file path */ isTemplateUrl?: boolean
+    /** Schema that used to generate code */ schema: string | object
+    /** If this is true, schema will be treated as url/file path */ isSchemaUrl?: boolean
+    /** Generate only declarations
+     * TODO: Not implemented yet. */ declaration?: boolean
+    /** If you only want to change comments on the top, you may need this.
+     * TODO: Not implemented yet. */ customCommentsOnTheTop?: string
+}
+export default function(config: Schema2tsAPI): Promise<string>
+```
 
 ## Q&A
 
