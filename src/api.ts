@@ -8,7 +8,7 @@ import { requestFile, parseJSONorYAML } from './utils'
 export interface Schema2tsAPI {
     /** Custom template that used to generate code */ template?: string
     isTemplateUrl?: boolean
-    /** Schema that used to generate code */ schema: any
+    /** Schema that used to generate code */ schema: string | object
     isSchemaUrl?: boolean
     /** Generate only declarations
      * TODO: Not implemented yet. */ declaration?: boolean
@@ -29,13 +29,13 @@ export default async function({
     if (!schema) {
         throw new ReferenceError('No input file, use --schema [url/file path] to provide one')
     }
-    if (config.isSchemaUrl) {
+    if (config.isSchemaUrl && typeof schema === 'string') {
         schema = parseJSONorYAML(await requestFile(schema))
     }
     if (typeof schema === 'string') {
         schema = parseJSONorYAML(schema)
     }
-    const internalExpressOfSchema = schema2server(schema)()
+    const internalExpressOfSchema = schema2server(schema as object)()
     const code = Generator(internalExpressOfSchema, template)
     return code
 }

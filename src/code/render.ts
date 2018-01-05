@@ -3,6 +3,7 @@ import * as Types from './types'
 import { getValidVarName, GenerateAsyncFunction } from '../utils'
 import { Server, IEndPoint } from './server'
 import { Export, AnyType } from '../constants'
+import * as packageJson from '../../package.json'
 
 /** Render Typescript Node to string */
 const render = (() => {
@@ -139,7 +140,6 @@ class Transformer {
 /** Inject vars */
 function vars(str: string): string {
     const now = new Date()
-    const packageJson = require('../../package.json')
     return str
         .replace(/%version%/g, packageJson.version)
         .replace(/%when%/g, now.toLocaleDateString() + ' ' + now.toLocaleTimeString())

@@ -13,10 +13,12 @@
     "@types/node": "^8.0.31",
     "@types/request": "^2.0.8",
     "@types/yamljs": "^0.2.30",
+    "ts-node": "^4.1.0",
     "tslint": "^5.7.0"
   },
   "scripts": {
-    "prepublishOnly": "tsc"
+    "prepublishOnly": "tsc",
+    "examples": "ts-node ./examples/examples.ts"
   },
   "bin": {
     "schema2ts": "./dist/cli.js"
