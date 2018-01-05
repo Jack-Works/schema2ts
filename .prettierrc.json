@@ -1,0 +1,14 @@
+{
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "all",
+    "printWidth": 120,
+    "overrides": [
+        {
+            "files": ["package.json"],
+            "options": {
+                "printWidth": 999999
+            }
+        }
+    ]
+}

@@ -1,15 +1,29 @@
 # Schema2ts
 
+<p align="center">
+  <a href="https://travis-ci.org/Jack-Works/schema2tscode">
+    <img alt="Travis" src="https://img.shields.io/travis/Jack-Works/schema2tscode.svg?style=flat-square">
+  </a>
+  <a href="https://www.npmjs.com/package/schema2ts">
+    <img alt="npm version" src="https://img.shields.io/npm/v/schema2ts.svg?style=flat-square">
+  </a>
+  <a href="#badge">
+    <img alt="code style: prettier" src="https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square">
+  </a>
+</p>
+
 Schema2ts is developed to generate Typescript code from Rest API schema.
 
 If you're using [GraphQL](http://graphql.org/), see [gql2ts](https://github.com/avantcredit/gql2ts)
 
 # Usage
+
 schema2ts [...options]
 
 ## Parameters
 
 ## --template=
+
 > **Type**: string
 
 > **Default**: Content of [default.template.ts](./src/default.template.ts)
@@ -17,6 +31,7 @@ schema2ts [...options]
 > The template of using to generate code.
 
 ## --in=
+
 > **Type**: string (path or url)
 
 > **Required**
@@ -24,6 +39,7 @@ schema2ts [...options]
 > Schema used to generate code.
 
 ## --out=
+
 > **Type**: string
 
 > Output path
@@ -40,7 +56,7 @@ schema2ts [...options]
 
 # Supported schema type?
 
-- [OpenAPI 2.0](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md)
+* [OpenAPI 2.0](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md)
 
 # What does it generate?
 
@@ -55,29 +71,32 @@ schema2ts [...options]
  *  Schema2ts: https://github.com/Jack-Works/schema2tscode/
  *  Syntax Error in this file? Report there https://github.com/Jack-Works/schema2tscode/issues
  *--------------------------------------------------------------------------------------------*/
-;
-import axios, { AxiosInstance, AxiosPromise } from "axios";
+import axios, { AxiosInstance, AxiosPromise } from 'axios'
 export interface _Response<Status, Data> {
-    data: Data;
-    status: Status;
-    statusText: string;
-    headers: any;
-    request?: any;
+    data: Data
+    status: Status
+    statusText: string
+    headers: any
+    request?: any
 }
 export const _ = {
     /** Code */
-};
-export var login_post_url = "/login";
-export var login_post_method = "post";
+}
+export var login_post_url = '/login'
+export var login_post_method = 'post'
 export type login_post_parameter_body = {
-    "username"?: string;
-    "password"?: string;
-};
+    username?: string
+    password?: string
+}
 /** Login Service */
-export function login_post_invoke(headers: login_post_parameter_header, body: login_post_parameter_body): Promise<_Response<200, string>> {
-    return _.request(login_post_url, login_post_method, { body: body, headers: headers, bodyType: "form" });
+export function login_post_invoke(
+    headers: login_post_parameter_header,
+    body: login_post_parameter_body,
+): Promise<_Response<200, string>> {
+    return _.request(login_post_url, login_post_method, { body: body, headers: headers, bodyType: 'form' })
 }
 ```
 
 # Licence
+
 > MIT
