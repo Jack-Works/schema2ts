@@ -37,7 +37,11 @@ export function parseJSONorYAML(text: string): any {
 /** Request a file */
 export function requestFile(url: string): Promise<string> {
     try {
-        new URL(url)
+        const u = new URL(url)
+        // This also includes https
+        if (!u.protocol.includes('http')) {
+            throw new Error('This is a file')
+        }
         return new Promise((resolve, reject) => {
             request(url, (error, response, body) => {
                 if (error) return reject(error)
@@ -49,7 +53,7 @@ export function requestFile(url: string): Promise<string> {
             })
         })
     } catch {
-        return Promise.resolve(parseJSONorYAML(readFileSync(url, 'utf-8')))
+        return Promise.resolve(readFileSync(url, 'utf-8'))
     }
 }
 

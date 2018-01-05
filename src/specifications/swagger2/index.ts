@@ -3,7 +3,7 @@ import { Server, IEndPoint } from '../../code/server'
 import * as Types from '../../code/types'
 import { Operation, Definition } from 'swagger2/dist/schema'
 
-export function is(object: any, path: string): object is Swagger2.Document {
+export function is(object: any): object is Swagger2.Document {
     if (object.swagger != '2.0') {
         return false
     }
@@ -183,11 +183,11 @@ function main(doc: Swagger2.Document): Server {
         interfaces,
     }
 }
-export function transformer(content: object, filePath: string) {
+export function transformer(content: object) {
     return (): Server => {
-        const document: Swagger2.Document = Swagger2.loadDocumentSync(filePath)
+        // const document: Swagger2.Document = Swagger2.compileDocument(filePath)
         // if (Swagger2.validateDocument(document)) {
-        return main(document)
+        return main(content as Swagger2.Document)
         // } else {
         // 	throw new TypeError('Not a valid Swagger2 schema!')
         // }

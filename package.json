@@ -1,9 +1,5 @@
 {
   "dependencies": {
-    "@types/minimist": "^1.2.0",
-    "@types/node": "^8.0.31",
-    "@types/request": "^2.0.8",
-    "@types/yamljs": "^0.2.30",
     "axios": "^0.17.1",
     "minimist": "^1.2.0",
     "request": "^2.83.0",
@@ -13,18 +9,22 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@types/minimist": "^1.2.0",
+    "@types/node": "^8.0.31",
+    "@types/request": "^2.0.8",
+    "@types/yamljs": "^0.2.30",
     "tslint": "^5.7.0"
   },
   "scripts": {
     "prepublishOnly": "tsc"
   },
   "bin": {
-    "schema2ts": "./dist/index.js"
+    "schema2ts": "./dist/cli.js"
   },
   "name": "schema2ts",
   "version": "0.4.4",
   "description": "Generate .ts class and namespace contains interface from API Schema",
-  "main": "dist/index.js",
+  "main": "dist/api.js",
   "repository": "https://github.com/Jack-Works/schema2tscode",
   "author": "Jack Works",
   "license": "MIT"

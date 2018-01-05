@@ -15,6 +15,7 @@
   },
   "exclude": [
     "./generated.ts",
-    "./dist"
+    "./dist",
+    "./examples"
   ]
 }
