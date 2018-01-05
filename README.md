@@ -1,4 +1,4 @@
-# Schema2ts
+<h2 align="center">Schema2ts</h2>
 
 <p align="center">
   <a href="https://travis-ci.org/Jack-Works/schema2tscode">
@@ -12,17 +12,15 @@
   </a>
 </p>
 
-Schema2ts is developed to generate Typescript code from Rest API schema.
+Schema2ts is developed to generate Typescript code from REST API schema.
 
-If you're using [GraphQL](http://graphql.org/), see [gql2ts](https://github.com/avantcredit/gql2ts)
-
-# Usage
+## Command Line usage
 
 schema2ts [...options]
 
-## Parameters
+### Parameters
 
-## --template=
+### --template=
 
 > **Type**: string
 
@@ -30,7 +28,7 @@ schema2ts [...options]
 
 > The template of using to generate code.
 
-## --in=
+### --in=
 
 > **Type**: string (path or url)
 
@@ -38,21 +36,27 @@ schema2ts [...options]
 
 > Schema used to generate code.
 
-## --out=
+### --out=
 
 > **Type**: string
 
 > Output path
 
-## --templateUrl=
+### --templateUrl=
 
 > **Type**: string (path or URL)
 
 > Path or URL of the template file.
 
-## --dryrun
+### --dryrun
 
 > No output.
+
+## API Usage
+
+API is in development.
+
+## Q&A
 
 # Supported schema type?
 

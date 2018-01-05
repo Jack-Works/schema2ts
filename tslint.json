@@ -1,17 +1,12 @@
 {
-    "rules": {
-        "no-misused-new": true,
-        "no-string-throw": true,
-        "no-var-keyword": true,
-        "prefer-const": true,
-        "quotemark": [
-            true,
-            "single"
-        ],
-        "radix": true,
-        "semicolon": [
-            true,
-            "never"
-        ]
-    }
+  "rules": {
+    "no-misused-new": true,
+    "no-string-throw": true,
+    "no-var-keyword": true,
+    "prefer-const": true,
+    "quotemark": [true, "single"],
+    "radix": true,
+    "semicolon": [true, "never"],
+    "no-unused-variable": true
+  }
 }
