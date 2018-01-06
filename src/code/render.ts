@@ -1,9 +1,10 @@
 import * as ts from 'typescript'
 import * as Types from './types'
-import { getValidVarName, GenerateAsyncFunction } from '../utils'
+import { getValidVarName, GenerateAsyncFunction, ReadonlyFileSystemHost } from '../utils'
 import { Server, IEndPoint } from './server'
 import { Export, AnyType } from '../constants'
 import * as packageJson from '../../package.json'
+import * as ast from 'ts-simple-ast'
 
 /** Render Typescript Node to string */
 const render = (() => {
@@ -145,7 +146,12 @@ function vars(str: string): string {
         .replace(/%when%/g, now.toLocaleDateString() + ' ' + now.toLocaleTimeString())
         .replace(/%typescript-version%/g, packageJson.dependencies ? packageJson.dependencies.typescript : 'unknown')
 }
-export function Generator(server: Server, template: string) {
+
+export interface Schema2tsGeneratorConfig {
+    declarationOnly?: boolean
+    leadingComments?: string
+}
+export function Generator(server: Server, template: string, config: Schema2tsGeneratorConfig) {
     const transformer = new Transformer()
     server.endpoints.map(x => transformer.endPointToDeclaration(x))
     // Read data
@@ -156,5 +162,30 @@ export function Generator(server: Server, template: string) {
         /@__JSDoc__ /g,
         '',
     )
-    return vars(code)
+    if (config.declarationOnly) {
+        const rfs = new ReadonlyFileSystemHost()
+        const ASTHost = new ast.default(
+            {
+                compilerOptions: {
+                    declaration: true,
+                    target: ts.ScriptTarget.Latest,
+                    module: ts.ModuleKind.ESNext,
+                    moduleResolution: ts.ModuleResolutionKind.NodeJs,
+                },
+            },
+            rfs,
+        )
+        const file = ASTHost.createSourceFile('source.ts', vars(code))
+        file.saveSync()
+        const dts = file.emit({ emitOnlyDtsFiles: true })
+        for (const diag of dts.getDiagnostics()) {
+            console.warn(`TS${diag.getCode()}: ${diag.getMessageText()}`)
+        }
+        if (dts.getEmitSkipped()) {
+            throw new Error('Typescript skipped emit file.')
+        }
+        return vars(config.leadingComments + '\n' + rfs.readFileSync('source.d.ts'))
+    } else {
+        return vars(config.leadingComments + '\n' + code)
+    }
 }

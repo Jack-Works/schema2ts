@@ -4,10 +4,33 @@ import { URL } from 'url'
 import * as request from 'request'
 import { Export, AnyType } from './constants'
 import { readFileSync } from 'fs'
+import { join, normalize } from 'path'
+import { DefaultFileSystemHost } from 'ts-simple-ast/dist/fileSystem'
 
 // tslint:disable-next-line:quotemark (conflict with prettier)
 const ValidCharsInURLSpecButNOTInVarName = "-._~:/?#[]@!&'()*+,;=".split('')
-
+/**
+ * A FileSystemHost provided to typescript compiler
+ */
+export class ReadonlyFileSystemHost extends DefaultFileSystemHost {
+    public changes = new Map<string, string>()
+    getPath(filePath: string) {
+        return normalize(join(this.getCurrentDirectory(), filePath))
+    }
+    async writeFile(filePath: string, fileText: string) {
+        this.changes.set(normalize(filePath), fileText)
+    }
+    writeFileSync(filePath: string, fileText: string) {
+        this.changes.set(normalize(filePath), fileText)
+    }
+    readFileSync(filePath: string, encoding?: string) {
+        return this.changes.get(this.getPath(filePath)) || super.readFileSync(filePath, encoding)
+    }
+    async readFile(filePath: string, encoding?: string) {
+        const f = this.changes.get(this.getPath(filePath))
+        return f ? Promise.resolve(f) : super.readFile(filePath, encoding)
+    }
+}
 /** Get a valid variable name from url string */
 export function getValidVarName(name: string) {
     return name
