@@ -20,6 +20,7 @@ export interface Schema2tsCLI {
     declaration?: boolean
     /** That's strange */ tsx?: boolean
     help?: boolean
+    customFileComment?: string
 }
 interface ShortForSchema2tsCLI {
     h?: Schema2tsCLI['help']
@@ -59,6 +60,7 @@ export default function CLIMain(_config: Schema2tsCLI & Schema2tsCLIDepercated) 
             template: _config.template,
             isTemplateUrl: true,
             declaration: _config.declaration,
+            customFileComment: _config.customFileComment,
         }
         const result = await main(config)
         if (_config.noEmit) {

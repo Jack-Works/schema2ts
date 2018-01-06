@@ -39,11 +39,19 @@ export interface Schema2tsAPI {
     /** If this is true, schema will be treated as url/file path */ isSchemaUrl?: boolean
     /** Generate only declarations
      * TODO: Not implemented yet. */ declaration?: boolean
-    /** If you only want to change comments on the top, you may need this.
-     * TODO: Not implemented yet. */ customCommentsOnTheTop?: string
+    /** If you only want to change comments on the top, you may need this. */ customFileComment?: string
 }
 export default function(config: Schema2tsAPI): Promise<string>
 ```
+
+## Template variables
+
+Variables that you can use in template comments
+
+* %version%: Current version of schema2ts
+* %typescript-version%: Current version of typescript that schema2ts use
+* %when%: Current time
+* %default-template%: Include default template of schema2ts
 
 ## Q&A
 
