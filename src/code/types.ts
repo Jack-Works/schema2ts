@@ -136,6 +136,8 @@ export interface ObjectOfWhat {
     optional?: boolean
     value: Type
     jsdoc?: string
+    readonly?: boolean // TODO: Not implemented.
+    defaultValue?: any // TODO: Not implemented.
 }
 export class ObjectOf extends Type {
     type = ComplexType.object
