@@ -9,7 +9,7 @@ const OpenAPI2 = [
     'https://raw.githubusercontent.com/OAI/OpenAPI-Specification/master/examples/v2.0/yaml/uber.yaml',
 ]
 
-const commentTemplate = (file, dec?) => `
+const commentTemplate = (file: string, dec?: any) => `
 *  This is an${dec ? ' declarationsOnly mode' : ''} example output of schema2ts
 *  Original input is: ${file}
 *
