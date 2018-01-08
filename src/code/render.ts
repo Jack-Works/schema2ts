@@ -86,7 +86,7 @@ class Transformer {
             return ts.createTypeReferenceNode('_Response', [statusCode, ref])
         }
         const returnTypesUnion: ts.TypeNode = (result => {
-            type Response = [number, ts.TypeNode]
+            type Response = [number | string, ts.TypeNode]
             if (!ep.result) {
                 return AnyType
             }
