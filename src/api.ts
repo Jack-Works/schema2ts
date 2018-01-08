@@ -48,7 +48,7 @@ export default async function({
 /*--------------------------------------------------------------------------------------------
 ${customFileComment.replace('%default-template%', defaultTemplateComment)}
 *--------------------------------------------------------------------------------------------*/`
-    const internalExpressOfSchema = schema2server(schema as object)()
+    const internalExpressOfSchema = await schema2server(schema as object)()
     const code = Generator(internalExpressOfSchema, template, {
         declarationOnly: config.declaration,
         leadingComments: leadingComments,

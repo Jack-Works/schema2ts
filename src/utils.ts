@@ -10,7 +10,7 @@ import { Schema } from 'swagger-schema-official'
 import * as Types from './code/types'
 
 // tslint:disable-next-line:quotemark (conflict with prettier)
-const ValidCharsInURLSpecButNOTInVarName = "-._~:/?#[]@!&'()*+,;=".split('')
+const ValidCharsInURLSpecButNOTInVarName = "-._~:/?#[]@!&'()*+,;= ".split('')
 /**
  * A FileSystemHost provided to typescript compiler
  */

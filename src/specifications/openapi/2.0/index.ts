@@ -11,7 +11,7 @@ import {
     FormDataParameter,
     BodyParameter,
 } from 'swagger-schema-official'
-import { JSONSchemaToTypes } from '../../../utils'
+import { JSONSchemaToTypes, getValidVarName } from '../../../utils'
 
 export function is(object: any): object is Swagger2Spec.Spec {
     if (object.swagger != '2.0') {
@@ -110,9 +110,10 @@ async function main(_doc: Swagger2Spec.Spec): Promise<Server> {
 
         if (op.responses) {
             for (const status in op.responses) {
-                if (status === 'default' || parseInt(status, 10)) {
+                const num = parseInt(status, 10)
+                if (status === 'default' || !isNaN(num)) {
                     const r = op.responses[status]
-                    result.push([status, r.schema ? JSONSchemaToTypes(r.schema) : new Types.Any()])
+                    result.push([!isNaN(num) ? num : status, r.schema ? JSONSchemaToTypes(r.schema) : new Types.Any()])
                 }
             }
         }
@@ -125,7 +126,7 @@ async function main(_doc: Swagger2Spec.Spec): Promise<Server> {
             headerParams,
             queryParams,
             result,
-            name: op.operationId,
+            name: op.operationId ? getValidVarName(op.operationId) : undefined,
             bodyParamsType,
             bodyParams: bodyParamsType === 'json' ? bodyParams : formParams,
             method: method as any,
@@ -134,5 +135,5 @@ async function main(_doc: Swagger2Spec.Spec): Promise<Server> {
     }
 }
 export function transformer(content: object) {
-    return main.bind(null, content)
+    return () => main(content as any)
 }
