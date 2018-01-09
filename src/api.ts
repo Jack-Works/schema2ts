@@ -1,5 +1,6 @@
+export { Server as Schema2tsServerDefinition } from './code/server'
 import { Generator } from './code/render'
-import schema2server from './specifications/specifications'
+import schema2server from './specifications'
 
 import { readFileSync } from 'fs'
 import { join } from 'path'
@@ -10,8 +11,7 @@ export interface Schema2tsAPI {
     /** If this is true, template will be treated as url/file path */ isTemplateUrl?: boolean
     /** Schema that used to generate code */ schema: string | object
     /** If this is true, schema will be treated as url/file path */ isSchemaUrl?: boolean
-    /** Generate only declarations
-     * TODO: Not implemented yet. */ declaration?: boolean
+    /** Generate only declarations */ declaration?: boolean
     /** If you only want to change comments on the top, you may need this. */ customFileComment?: string
 }
 
@@ -48,7 +48,7 @@ export default async function({
 /*--------------------------------------------------------------------------------------------
 ${customFileComment.replace('%default-template%', defaultTemplateComment)}
 *--------------------------------------------------------------------------------------------*/`
-    const internalExpressOfSchema = await schema2server(schema as object)()
+    const internalExpressOfSchema = await schema2server(schema as object)
     const code = Generator(internalExpressOfSchema, template, {
         declarationOnly: config.declaration,
         leadingComments: leadingComments,

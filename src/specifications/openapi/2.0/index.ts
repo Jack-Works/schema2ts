@@ -2,7 +2,6 @@ import * as Swagger2 from 'swagger-parser'
 import * as Swagger2Spec from 'swagger-schema-official'
 import { Server, IEndPoint } from '../../../code/server'
 import * as Types from '../../../code/types'
-import { Operation, Definition } from 'swagger2/dist/schema'
 import {
     Parameter,
     QueryParameter,
@@ -31,7 +30,7 @@ const baseTypeMap: Record<any, any> = {
     number: 1,
 }
 
-async function main(_doc: Swagger2Spec.Spec): Promise<Server> {
+export async function transformer(_doc: Swagger2Spec.Spec): Promise<Server> {
     const doc: Swagger2Spec.Spec = await Swagger2.dereference(_doc)
 
     const baseUrl = doc.basePath
@@ -133,7 +132,4 @@ async function main(_doc: Swagger2Spec.Spec): Promise<Server> {
             modifier: {},
         })
     }
-}
-export function transformer(content: object) {
-    return () => main(content as any)
 }

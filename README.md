@@ -44,6 +44,23 @@ export interface Schema2tsAPI {
 export default function(config: Schema2tsAPI): Promise<string>
 ```
 
+### Add a custom specification
+
+Here is an [example](./examples/example.custom.spec.ts)
+
+```typescript
+import { Specs, SpecificationProvider } from 'schema2ts/dist/specifications'
+// All Specs are in this Map
+
+import API, { Schema2tsServerDefinition } from 'schema2ts/dist/api'
+// Your transformer need to return a Schema2tsServerDefinition
+
+declare const MySpec: SpecificationProvider
+Specs.set('My API', MySpec)
+// Set your spec before API call
+API({ schema: { mySchema: true } }).then(result => {})
+```
+
 ## Template variables
 
 Variables that you can use in template comments
