@@ -45,86 +45,32 @@ export declare var findPetById_url: string;
 export declare var findPetById_method: string;
 export declare var deletePet_url: string;
 export declare var deletePet_method: string;
-export declare type findPets_parameter_query = {
-    "tags": string[];
-    "limit": number;
-};
-export declare type findPets_result_200 = ({
+export interface findPets_parameter_query {
+    /** tags to filter by */ "tags": string[];
+    /** maximum number of results to return */ "limit": number;
+}
+export interface NewPet {
     "name": string;
     "tag"?: string;
-} & {
+}
+export declare type Pet = NewPet & {
     "id": number;
-})[];
-export declare type findPets_result_default = {
+};
+export interface ErrorModel {
     "code": number;
     "message": string;
-};
+}
 /** Returns all pets from the system that the user has access to */
-export declare function findPets(query: findPets_parameter_query): Promise<_Response<200, ({
-    "name": string;
-    "tag"?: string;
-} & {
-    "id": number;
-})[]> | _Response<"default", {
-    "code": number;
-    "message": string;
-}>>;
-export declare type addPet_parameter_body = {
-    "name": string;
-    "tag"?: string;
-};
-export declare type addPet_result_200 = {
-    "name": string;
-    "tag"?: string;
-} & {
-    "id": number;
-};
-export declare type addPet_result_default = {
-    "code": number;
-    "message": string;
-};
+export declare function findPets(query: findPets_parameter_query): Promise<_Response<200, Pet[]> | _Response<"default", ErrorModel>>;
 /** Creates a new pet in the store.  Duplicates are allowed */
-export declare function addPet(body: addPet_parameter_body): Promise<_Response<200, {
-    "name": string;
-    "tag"?: string;
-} & {
-    "id": number;
-}> | _Response<"default", {
-    "code": number;
-    "message": string;
-}>>;
-export declare type findPetById_parameter_path = {
-    "id": number;
-};
-export declare type findPetById_result_200 = {
-    "name": string;
-    "tag"?: string;
-} & {
-    "id": number;
-};
-export declare type findPetById_result_default = {
-    "code": number;
-    "message": string;
-};
+export declare function addPet(body: NewPet): Promise<_Response<200, Pet> | _Response<"default", ErrorModel>>;
+export interface findPetById_parameter_path {
+    /** ID of pet to fetch */ "id": number;
+}
 /** Returns a user based on a single ID, if the user does not have access to the pet */
-export declare function findPetById(path: findPetById_parameter_path): Promise<_Response<200, {
-    "name": string;
-    "tag"?: string;
-} & {
-    "id": number;
-}> | _Response<"default", {
-    "code": number;
-    "message": string;
-}>>;
-export declare type deletePet_parameter_path = {
-    "id": number;
-};
-export declare type deletePet_result_default = {
-    "code": number;
-    "message": string;
-};
+export declare function findPetById(path: findPetById_parameter_path): Promise<_Response<200, Pet> | _Response<"default", ErrorModel>>;
+export interface deletePet_parameter_path {
+    /** ID of pet to delete */ "id": number;
+}
 /** deletes a single pet based on the ID supplied */
-export declare function deletePet(path: deletePet_parameter_path): Promise<_Response<"default", {
-    "code": number;
-    "message": string;
-}>>;
+export declare function deletePet(path: deletePet_parameter_path): Promise<_Response<"default", ErrorModel>>;

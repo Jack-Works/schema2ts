@@ -67,16 +67,12 @@ export const _ = {
 };
 export var pets_get_url = "/pets";
 export var pets_get_method = "get";
-export type pets_get_result_200 = {
+export interface Pet {
     "id": number;
     "name": string;
     "tag"?: string;
-}[];
+}
 /** Returns all pets from the system that the user has access to */
-export function pets_get(): Promise<_Response<200, {
-            "id": number;
-            "name": string;
-            "tag"?: string;
-        }[]>> {
+export function pets_get(): Promise<_Response<200, Pet[]>> {
     return _.request(pets_get_url, pets_get_method, { bodyType: "json" });
 }

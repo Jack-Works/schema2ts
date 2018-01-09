@@ -71,60 +71,31 @@ export var createPets_url = "/pets";
 export var createPets_method = "post";
 export var showPetById_url = "/pets/{petId}";
 export var showPetById_method = "get";
-export type listPets_parameter_query = {
-    "limit": number;
-};
-export type listPets_result_200 = {
+export interface listPets_parameter_query {
+    /** How many items to return at one time (max 100) */ "limit": number;
+}
+export interface Pet {
     "id": number;
     "name": string;
     "tag"?: string;
-}[];
-export type listPets_result_default = {
+}
+export type Pets = Pet[];
+export interface Error {
     "code": number;
     "message": string;
-};
+}
 /** List all pets */
-export function listPets(query: listPets_parameter_query): Promise<_Response<200, {
-            "id": number;
-            "name": string;
-            "tag"?: string;
-        }[]> | _Response<"default", {
-            "code": number;
-            "message": string;
-        }>> {
+export function listPets(query: listPets_parameter_query): Promise<_Response<200, Pets> | _Response<"default", Error>> {
     return _.request(listPets_url, listPets_method, { query: query, bodyType: "json" });
 }
-export type createPets_result_default = {
-    "code": number;
-    "message": string;
-};
 /** Create a pet */
-export function createPets(): Promise<_Response<"default", {
-            "code": number;
-            "message": string;
-        }>> {
+export function createPets(): Promise<_Response<"default", Error>> {
     return _.request(createPets_url, createPets_method, { bodyType: "json" });
 }
-export type showPetById_parameter_path = {
-    "petId": string;
-};
-export type showPetById_result_200 = {
-    "id": number;
-    "name": string;
-    "tag"?: string;
-}[];
-export type showPetById_result_default = {
-    "code": number;
-    "message": string;
-};
+export interface showPetById_parameter_path {
+    /** The id of the pet to retrieve */ "petId": string;
+}
 /** Info for a specific pet */
-export function showPetById(path: showPetById_parameter_path): Promise<_Response<200, {
-            "id": number;
-            "name": string;
-            "tag"?: string;
-        }[]> | _Response<"default", {
-            "code": number;
-            "message": string;
-        }>> {
+export function showPetById(path: showPetById_parameter_path): Promise<_Response<200, Pets> | _Response<"default", Error>> {
     return _.request(showPetById_url, showPetById_method, { path: path, bodyType: "json" });
 }

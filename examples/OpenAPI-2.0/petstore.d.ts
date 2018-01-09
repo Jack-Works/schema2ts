@@ -43,54 +43,25 @@ export declare var createPets_url: string;
 export declare var createPets_method: string;
 export declare var showPetById_url: string;
 export declare var showPetById_method: string;
-export declare type listPets_parameter_query = {
-    "limit": number;
-};
-export declare type listPets_result_200 = {
+export interface listPets_parameter_query {
+    /** How many items to return at one time (max 100) */ "limit": number;
+}
+export interface Pet {
     "id": number;
     "name": string;
     "tag"?: string;
-}[];
-export declare type listPets_result_default = {
+}
+export declare type Pets = Pet[];
+export interface Error {
     "code": number;
     "message": string;
-};
+}
 /** List all pets */
-export declare function listPets(query: listPets_parameter_query): Promise<_Response<200, {
-    "id": number;
-    "name": string;
-    "tag"?: string;
-}[]> | _Response<"default", {
-    "code": number;
-    "message": string;
-}>>;
-export declare type createPets_result_default = {
-    "code": number;
-    "message": string;
-};
+export declare function listPets(query: listPets_parameter_query): Promise<_Response<200, Pets> | _Response<"default", Error>>;
 /** Create a pet */
-export declare function createPets(): Promise<_Response<"default", {
-    "code": number;
-    "message": string;
-}>>;
-export declare type showPetById_parameter_path = {
-    "petId": string;
-};
-export declare type showPetById_result_200 = {
-    "id": number;
-    "name": string;
-    "tag"?: string;
-}[];
-export declare type showPetById_result_default = {
-    "code": number;
-    "message": string;
-};
+export declare function createPets(): Promise<_Response<"default", Error>>;
+export interface showPetById_parameter_path {
+    /** The id of the pet to retrieve */ "petId": string;
+}
 /** Info for a specific pet */
-export declare function showPetById(path: showPetById_parameter_path): Promise<_Response<200, {
-    "id": number;
-    "name": string;
-    "tag"?: string;
-}[]> | _Response<"default", {
-    "code": number;
-    "message": string;
-}>>;
+export declare function showPetById(path: showPetById_parameter_path): Promise<_Response<200, Pets> | _Response<"default", Error>>;

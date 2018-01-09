@@ -75,43 +75,33 @@ export var me_get_url = "/me";
 export var me_get_method = "get";
 export var history_get_url = "/history";
 export var history_get_method = "get";
-export type products_get_parameter_query = {
-    "latitude": number;
-    "longitude": number;
-};
-export type products_get_result_200 = {
+export interface products_get_parameter_query {
+    /** Latitude component of location. */ "latitude": number;
+    /** Longitude component of location. */ "longitude": number;
+}
+export interface Product {
     "product_id"?: string;
     "description"?: string;
     "display_name"?: string;
     "capacity"?: number;
     "image"?: string;
-}[];
-export type products_get_result_default = {
+}
+export interface Error {
     "code"?: number;
     "message"?: string;
     "fields"?: string;
-};
+}
 /** The Products endpoint returns information about the Uber products offered at a given location. The response includes the display name and other details about each product, and lists the products in the proper display order. */
-export function products_get(query: products_get_parameter_query): Promise<_Response<200, {
-            "product_id"?: string;
-            "description"?: string;
-            "display_name"?: string;
-            "capacity"?: number;
-            "image"?: string;
-        }[]> | _Response<"default", {
-            "code"?: number;
-            "message"?: string;
-            "fields"?: string;
-        }>> {
+export function products_get(query: products_get_parameter_query): Promise<_Response<200, Product[]> | _Response<"default", Error>> {
     return _.request(products_get_url, products_get_method, { query: query, bodyType: "json" });
 }
-export type estimates_price_get_parameter_query = {
-    "start_latitude": number;
-    "start_longitude": number;
-    "end_latitude": number;
-    "end_longitude": number;
-};
-export type estimates_price_get_result_200 = {
+export interface estimates_price_get_parameter_query {
+    /** Latitude component of start location. */ "start_latitude": number;
+    /** Longitude component of start location. */ "start_longitude": number;
+    /** Latitude component of end location. */ "end_latitude": number;
+    /** Longitude component of end location. */ "end_longitude": number;
+}
+export interface PriceEstimate {
     "product_id"?: string;
     "currency_code"?: string;
     "display_name"?: string;
@@ -119,115 +109,46 @@ export type estimates_price_get_result_200 = {
     "low_estimate"?: number;
     "high_estimate"?: number;
     "surge_multiplier"?: number;
-}[];
-export type estimates_price_get_result_default = {
-    "code"?: number;
-    "message"?: string;
-    "fields"?: string;
-};
+}
 /** The Price Estimates endpoint returns an estimated price range for each product offered at a given location. The price estimate is provided as a formatted string with the full price range and the localized currency symbol.<br><br>The response also includes low and high estimates, and the [ISO 4217](http://en.wikipedia.org/wiki/ISO_4217) currency code for situations requiring currency conversion. When surge is active for a particular product, its surge_multiplier will be greater than 1, but the price estimate already factors in this multiplier. */
-export function estimates_price_get(query: estimates_price_get_parameter_query): Promise<_Response<200, {
-            "product_id"?: string;
-            "currency_code"?: string;
-            "display_name"?: string;
-            "estimate"?: string;
-            "low_estimate"?: number;
-            "high_estimate"?: number;
-            "surge_multiplier"?: number;
-        }[]> | _Response<"default", {
-            "code"?: number;
-            "message"?: string;
-            "fields"?: string;
-        }>> {
+export function estimates_price_get(query: estimates_price_get_parameter_query): Promise<_Response<200, PriceEstimate[]> | _Response<"default", Error>> {
     return _.request(estimates_price_get_url, estimates_price_get_method, { query: query, bodyType: "json" });
 }
-export type estimates_time_get_parameter_query = {
-    "start_latitude": number;
-    "start_longitude": number;
-    "customer_uuid": string;
-    "product_id": string;
-};
-export type estimates_time_get_result_200 = {
-    "product_id"?: string;
-    "description"?: string;
-    "display_name"?: string;
-    "capacity"?: number;
-    "image"?: string;
-}[];
-export type estimates_time_get_result_default = {
-    "code"?: number;
-    "message"?: string;
-    "fields"?: string;
-};
+export interface estimates_time_get_parameter_query {
+    /** Latitude component of start location. */ "start_latitude": number;
+    /** Longitude component of start location. */ "start_longitude": number;
+    /** Unique customer identifier to be used for experience customization. */ "customer_uuid": string;
+    /** Unique identifier representing a specific product for a given latitude & longitude. */ "product_id": string;
+}
 /** The Time Estimates endpoint returns ETAs for all products offered at a given location, with the responses expressed as integers in seconds. We recommend that this endpoint be called every minute to provide the most accurate, up-to-date ETAs. */
-export function estimates_time_get(query: estimates_time_get_parameter_query): Promise<_Response<200, {
-            "product_id"?: string;
-            "description"?: string;
-            "display_name"?: string;
-            "capacity"?: number;
-            "image"?: string;
-        }[]> | _Response<"default", {
-            "code"?: number;
-            "message"?: string;
-            "fields"?: string;
-        }>> {
+export function estimates_time_get(query: estimates_time_get_parameter_query): Promise<_Response<200, Product[]> | _Response<"default", Error>> {
     return _.request(estimates_time_get_url, estimates_time_get_method, { query: query, bodyType: "json" });
 }
-export type me_get_result_200 = {
+export interface Profile {
     "first_name"?: string;
     "last_name"?: string;
     "email"?: string;
     "picture"?: string;
     "promo_code"?: string;
-};
-export type me_get_result_default = {
-    "code"?: number;
-    "message"?: string;
-    "fields"?: string;
-};
+}
 /** The User Profile endpoint returns information about the Uber user that has authorized with the application. */
-export function me_get(): Promise<_Response<200, {
-            "first_name"?: string;
-            "last_name"?: string;
-            "email"?: string;
-            "picture"?: string;
-            "promo_code"?: string;
-        }> | _Response<"default", {
-            "code"?: number;
-            "message"?: string;
-            "fields"?: string;
-        }>> {
+export function me_get(): Promise<_Response<200, Profile> | _Response<"default", Error>> {
     return _.request(me_get_url, me_get_method, { bodyType: "json" });
 }
-export type history_get_parameter_query = {
-    "offset": number;
-    "limit": number;
-};
-export type history_get_result_200 = {
+export interface history_get_parameter_query {
+    /** Offset the list of returned results by this amount. Default is zero. */ "offset": number;
+    /** Number of items to retrieve. Default is 5, maximum is 100. */ "limit": number;
+}
+export interface Activity {
+    "uuid"?: string;
+}
+export interface Activities {
     "offset"?: number;
     "limit"?: number;
     "count"?: number;
-    "history"?: {
-        "uuid"?: string;
-    }[];
-};
-export type history_get_result_default = {
-    "code"?: number;
-    "message"?: string;
-    "fields"?: string;
-};
+    "history"?: Activity[];
+}
 /** The User Activity endpoint returns data about a user's lifetime activity with Uber. The response will include pickup locations and times, dropoff locations and times, the distance of past requests, and information about which products were requested.<br><br>The history array in the response will have a maximum length based on the limit parameter. The response value count may exceed limit, therefore subsequent API requests may be necessary. */
-export function history_get(query: history_get_parameter_query): Promise<_Response<200, {
-            "offset"?: number;
-            "limit"?: number;
-            "count"?: number;
-            "history"?: {
-                "uuid"?: string;
-            }[];
-        }> | _Response<"default", {
-            "code"?: number;
-            "message"?: string;
-            "fields"?: string;
-        }>> {
+export function history_get(query: history_get_parameter_query): Promise<_Response<200, Activities> | _Response<"default", Error>> {
     return _.request(history_get_url, history_get_method, { query: query, bodyType: "json" });
 }

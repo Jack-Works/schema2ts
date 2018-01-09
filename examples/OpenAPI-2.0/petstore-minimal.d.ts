@@ -39,14 +39,10 @@ export declare const _: {
 };
 export declare var pets_get_url: string;
 export declare var pets_get_method: string;
-export declare type pets_get_result_200 = {
+export interface Pet {
     "id": number;
     "name": string;
     "tag"?: string;
-}[];
+}
 /** Returns all pets from the system that the user has access to */
-export declare function pets_get(): Promise<_Response<200, {
-    "id": number;
-    "name": string;
-    "tag"?: string;
-}[]>>;
+export declare function pets_get(): Promise<_Response<200, Pet[]>>;
