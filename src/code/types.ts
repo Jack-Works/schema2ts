@@ -222,18 +222,29 @@ export class TypeReferenceType extends Type {
             return this.of.getDeclaration()
         }
         if (isObjectType(this.of)) {
-            const getComment = (x: ts.TypeElement) => {
+            const getName = (x: ts.TypeElement) => {
                 if (!x.name) return undefined
                 if (ts.isIdentifier(x.name) || ts.isStringLiteral(x.name)) {
                     return x.name.text
                 }
                 return undefined
             }
+            const getComment = (y: ts.TypeElement) => {
+                const name = getName(y)
+                if (!name) return
+                this.of
+            }
             const nodes = this.of.toTypescript().members
-            nodes.forEach(node => {
-                const comment = getComment(node)
-                if (comment) ts.addSyntheticLeadingComment(node, ts.SyntaxKind.MultiLineCommentTrivia, comment)
-            })
+            nodes
+                .map(node => ({ name: getName(node), node }))
+                .filter(x => x.name)
+                .map(x => {
+                    return { comment: (this.of as ObjectOf).of.filter(key => key.key === x.name)[0], ...x }
+                })
+                .filter(x => x.comment && x.comment.jsdoc)
+                .forEach(x => {
+                    ts.addSyntheticLeadingComment(x.node, ts.SyntaxKind.MultiLineCommentTrivia, x.comment.jsdoc!)
+                })
             d = ts.createInterfaceDeclaration(
                 void 0,
                 [ts.createToken(ts.SyntaxKind.ExportKeyword)],
