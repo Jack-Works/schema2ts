@@ -114,7 +114,7 @@ class Transformer {
 
         this.declarations.push(
             GenerateAsyncFunction(
-                name + '_invoke',
+                name,
                 FunctionBody,
                 parameters
                     .filter(x => !x.type.isFalsy())
