@@ -177,8 +177,14 @@ export function JSONSchemaToTypes(from: Schema, name = getJSONRefName(from)): Ty
         case 'boolean':
             return new Types.Literal(true, false)
         case 'null':
+            return new Types.Any()
         default:
-            return new Types.Literal(null, true)
+            try {
+                const newer = { ...from, type: 'object' }
+                return JSONSchemaToTypes(newer)
+            } catch {
+                return JSONSchemaToTypes({ type: 'null' })
+            }
     }
 }
 function isNumber(n?: string) {
