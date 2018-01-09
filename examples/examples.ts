@@ -29,10 +29,14 @@ async function run(urls: string[], path: string) {
                 customFileComment: commentTemplate(url),
             }
             await cli(config)
-            cli({ ...config, declaration: true, customFileComment: commentTemplate(url, true) })
+            await cli({ ...config, declaration: true, customFileComment: commentTemplate(url, true) })
         } catch (e) {
             console.error(e)
         }
     }
 }
 run(OpenAPI2, 'OpenAPI-2.0')
+
+process.on('unhandledRejection', (reason, p) => {
+    throw reason
+})

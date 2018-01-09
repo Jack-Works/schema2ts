@@ -218,32 +218,54 @@ export class TypeReferenceType extends Type {
          *  otherwise, generate a type alias (type X = Type)
          */
         let d: ts.Declaration | null = null
+        if (isTypeReference(this.of)) {
+            return this.of.getDeclaration()
+        }
         if (isObjectType(this.of)) {
-            const jsDocObj = new ObjectOf(
-                this.of.of.map(x => {
-                    // clone a ObjectOf but jsdoc version
-                    if (!x.jsdoc) return x
-                    const y = { ...x }
-                    y.key = `/** ${x.jsdoc} */` + x.key
-                    return y
-                }),
-            )
+            const getName = (x: ts.TypeElement) => {
+                if (!x.name) return undefined
+                if (ts.isIdentifier(x.name) || ts.isStringLiteral(x.name)) {
+                    return x.name.text
+                }
+                return undefined
+            }
+            const getComment = (y: ts.TypeElement) => {
+                const name = getName(y)
+                if (!name) return
+                this.of
+            }
+            const nodes = this.of.toTypescript().members
+            nodes
+                .map(node => ({ name: getName(node), node }))
+                .filter(x => x.name)
+                .map(x => {
+                    return { comment: (this.of as ObjectOf).of.filter(key => key.key === x.name)[0], ...x }
+                })
+                .filter(x => x.comment && x.comment.jsdoc)
+                .forEach(x => {
+                    ts.addSyntheticLeadingComment(
+                        x.node,
+                        ts.SyntaxKind.MultiLineCommentTrivia,
+                        '* ' + x.comment.jsdoc! + ' ',
+                    )
+                })
             d = ts.createInterfaceDeclaration(
                 void 0,
                 [ts.createToken(ts.SyntaxKind.ExportKeyword)],
                 this.ref,
                 void 0,
                 void 0,
-                jsDocObj.toTypescript().members,
+                nodes,
+            )
+        } else {
+            d = ts.createTypeAliasDeclaration(
+                undefined,
+                [ts.createToken(ts.SyntaxKind.ExportKeyword)],
+                this.ref,
+                [],
+                this.of.toTypescript(),
             )
         }
-        d = ts.createTypeAliasDeclaration(
-            undefined,
-            [ts.createToken(ts.SyntaxKind.ExportKeyword)],
-            this.ref,
-            [],
-            this.of.toTypescript(),
-        )
         return [...this.of.getDeclaration(), d]
     }
 }

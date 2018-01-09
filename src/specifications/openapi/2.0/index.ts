@@ -10,14 +10,16 @@ import {
     FormDataParameter,
     BodyParameter,
 } from 'swagger-schema-official'
-import { JSONSchemaToTypes, getValidVarName } from '../../../utils'
+import { createJSONSchemaToTypes, getValidVarName } from '../../../utils'
+import cloneDeep = require('lodash.clonedeep')
 
 export function is(object: any): object is Swagger2Spec.Spec {
     if (object.swagger != '2.0') {
         return false
     }
     // validate isn't a sync function, so we let it go through, if validate failed, throw then
-    Swagger2.validate(object).catch(reason => {
+    // !?!?! validate dereferenced JSON $ref?????
+    Swagger2.validate(cloneDeep(object)).catch(reason => {
         throw reason
     })
     return true
@@ -30,8 +32,8 @@ const baseTypeMap: Record<any, any> = {
     number: 1,
 }
 
-export async function transformer(_doc: Swagger2Spec.Spec): Promise<Server> {
-    const doc: Swagger2Spec.Spec = await Swagger2.dereference(_doc)
+export async function transformer(doc: Swagger2Spec.Spec): Promise<Server> {
+    const JSONSchemaToTypes = await createJSONSchemaToTypes(doc, true)
 
     const baseUrl = doc.basePath
     const endpoints: IEndPoint[] = []
