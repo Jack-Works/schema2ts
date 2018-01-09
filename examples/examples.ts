@@ -36,3 +36,7 @@ async function run(urls: string[], path: string) {
     }
 }
 run(OpenAPI2, 'OpenAPI-2.0')
+
+process.on('unhandledRejection', (reason, p) => {
+    throw reason
+})

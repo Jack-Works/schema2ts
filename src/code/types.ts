@@ -218,32 +218,39 @@ export class TypeReferenceType extends Type {
          *  otherwise, generate a type alias (type X = Type)
          */
         let d: ts.Declaration | null = null
+        if (isTypeReference(this.of)) {
+            return this.of.getDeclaration()
+        }
         if (isObjectType(this.of)) {
-            const jsDocObj = new ObjectOf(
-                this.of.of.map(x => {
-                    // clone a ObjectOf but jsdoc version
-                    if (!x.jsdoc) return x
-                    const y = { ...x }
-                    y.key = `/** ${x.jsdoc} */` + x.key
-                    return y
-                }),
-            )
+            const getComment = (x: ts.TypeElement) => {
+                if (!x.name) return undefined
+                if (ts.isIdentifier(x.name) || ts.isStringLiteral(x.name)) {
+                    return x.name.text
+                }
+                return undefined
+            }
+            const nodes = this.of.toTypescript().members
+            nodes.forEach(node => {
+                const comment = getComment(node)
+                if (comment) ts.addSyntheticLeadingComment(node, ts.SyntaxKind.MultiLineCommentTrivia, comment)
+            })
             d = ts.createInterfaceDeclaration(
                 void 0,
                 [ts.createToken(ts.SyntaxKind.ExportKeyword)],
                 this.ref,
                 void 0,
                 void 0,
-                jsDocObj.toTypescript().members,
+                nodes,
+            )
+        } else {
+            d = ts.createTypeAliasDeclaration(
+                undefined,
+                [ts.createToken(ts.SyntaxKind.ExportKeyword)],
+                this.ref,
+                [],
+                this.of.toTypescript(),
             )
         }
-        d = ts.createTypeAliasDeclaration(
-            undefined,
-            [ts.createToken(ts.SyntaxKind.ExportKeyword)],
-            this.ref,
-            [],
-            this.of.toTypescript(),
-        )
         return [...this.of.getDeclaration(), d]
     }
 }

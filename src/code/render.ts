@@ -97,7 +97,7 @@ class Transformer {
                         return [code, type.toTypescript()]
                     }
                     const ref = new Types.TypeReferenceType(name + '_result_' + code, type)
-                    this.declarations.push(...ref.getDeclaration())
+                    this.declarations.push(...type.getDeclaration())
                     return [code, type.toTypescript()]
                 })
                 .filter((x: any) => x)
