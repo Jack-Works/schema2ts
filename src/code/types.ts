@@ -243,7 +243,11 @@ export class TypeReferenceType extends Type {
                 })
                 .filter(x => x.comment && x.comment.jsdoc)
                 .forEach(x => {
-                    ts.addSyntheticLeadingComment(x.node, ts.SyntaxKind.MultiLineCommentTrivia, x.comment.jsdoc!)
+                    ts.addSyntheticLeadingComment(
+                        x.node,
+                        ts.SyntaxKind.MultiLineCommentTrivia,
+                        '* ' + x.comment.jsdoc! + ' ',
+                    )
                 })
             d = ts.createInterfaceDeclaration(
                 void 0,
