@@ -1,4 +1,8 @@
 import * as ts from 'typescript'
+import * as ast from 'ts-simple-ast'
+
+//#region Types & fns
+
 export enum LiteralType {
     boolean = 1,
     number,
@@ -40,6 +44,9 @@ export function isVoidType(x: Type): x is Void {
 export function isTypeReference(x: Type): x is TypeReferenceType {
     return x.type === TypescriptType.TypeReference
 }
+
+//#endregion
+
 export abstract class Type {
     abstract toTypescript(): ts.TypeNode
     /** Cut type information to be human-friendly, but maybe less precise */
@@ -67,6 +74,24 @@ export abstract class Type {
                 }
                 return !!falsy[this.type]
         }
+    }
+
+    protected JSDoc: string | undefined = undefined
+    protected JSDocType: ts.SyntaxKind.SingleLineCommentTrivia | ts.SyntaxKind.MultiLineCommentTrivia
+    addJSDoc(
+        jsdoc: string | string[],
+        type: ts.SyntaxKind.SingleLineCommentTrivia | ts.SyntaxKind.MultiLineCommentTrivia = ts.SyntaxKind
+            .MultiLineCommentTrivia,
+    ): void {
+        if (Array.isArray(jsdoc)) {
+            jsdoc = jsdoc.join('\n* ')
+        }
+        this.JSDoc = jsdoc
+        this.JSDocType = type
+    }
+    JSDocWrapper<T extends ts.Node>(node: T, newLine = false) {
+        if (this.JSDoc) ts.addSyntheticLeadingComment(node, this.JSDocType, `* ${this.JSDoc} `, newLine)
+        return node
     }
 }
 //#region Literal, Any, Void
@@ -148,15 +173,17 @@ export class ObjectOf extends Type {
         return ts.createTypeLiteralNode(
             this.of.map(x => {
                 if (!x.key) {
-                    throw new TypeError('A unknown property name.')
+                    throw new TypeError('An unknown property name.')
                 }
-                return ts.createPropertySignature(
+                const node = ts.createPropertySignature(
                     undefined,
                     /** name */ ts.createLiteral(x.key),
                     /** question mark */ x.optional ? ts.createToken(ts.SyntaxKind.QuestionToken) : undefined,
                     /** subtype */ x.value.toTypescript(),
                     undefined,
                 )
+                x.value.JSDocWrapper(node, true)
+                return node
             }),
         )
     }
@@ -177,18 +204,25 @@ export class ObjectOf extends Type {
 //#region Typescript Type
 export class EnumOf extends Type {
     type = TypescriptType.enum
-    constructor(public name: string, public of: string[], public val: string[] | number[] = []) {
+    constructor(public name: string, public of: { name: string; value?: string | number | undefined }[] = []) {
         super()
     }
     getDeclaration(): ts.Declaration[] {
-        /** `export enum name { of[0]: val[0], of[1]: val[1], ... }` */
-        const self = ts.createEnumDeclaration(undefined, [ts.createToken(ts.SyntaxKind.ExportKeyword)], this.name, [
-            ...this.of.map((member, index) => {
-                const memberInitValue = ts.createLiteral(this.val[index])
-                return ts.createEnumMember(member, this.val[index] && (memberInitValue as any))
-            }),
-        ])
-        return [self]
+        const members: ts.EnumMember[] = []
+        for (const item of this.of) {
+            const member = ts.createEnumMember(
+                item.name,
+                item.value !== undefined ? ts.createLiteral(item.value) : undefined,
+            )
+            members.push(member)
+        }
+        const self = ts.createEnumDeclaration(
+            undefined,
+            [ts.createToken(ts.SyntaxKind.ExportKeyword)],
+            this.name,
+            members,
+        )
+        return [this.JSDocWrapper(self)]
     }
     toTypescript() {
         return ts.createTypeReferenceNode(this.name, [])
@@ -207,7 +241,7 @@ export class TypeReferenceType extends Type {
             if (isLiteralType(this.of)) return this.of.toTypescript()
             return new Any().toTypescript()
         }
-        return ts.createTypeReferenceNode(this.ref, [])
+        return this.JSDocWrapper(ts.createTypeReferenceNode(this.ref, []))
     }
     getDeclaration(): ts.Declaration[] {
         if (this.isFalsy()) {

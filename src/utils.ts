@@ -142,10 +142,44 @@ export async function createJSONSchemaToTypes(document: any, nameOptions?: any) 
             return new Types.And([JSONSchemaToTypes(newer), JSONSchemaToTypes(from.additionalProperties)])
         } else if (from.enum) {
             const newer = { ...from, enum: undefined }
-            if (from.type === 'string') {
-                // TODO: String enum
-            } else if (isNumber(from.type)) {
-                // TODO: integer enum
+            if (from.type === 'string' || from.type === 'number') {
+                const enums: string[] = from.enum.filter(x => typeof x === 'string') as any
+                let EnumName: string | undefined = undefined
+                // Speical case for OpenAPI 2.0
+                if (document.definitions) {
+                    for (const key in document.definitions) {
+                        const _def = document.definitions[key].enum
+                        // Check if enum in the definitions is the same as current enum
+                        // Cause OpenAPI 2.0 enum use yaml reference, so the name is lost in the convertion
+                        // We have to use this way to compare
+                        if (
+                            _def &&
+                            document.definitions[key].type === from.type && // string enum is not equal to number enum
+                            Array.isArray(_def) &&
+                            _def.every((v, i) => v === from.enum![i]) // Since the enum ref is using yaml ref, it must keep the same order
+                        ) {
+                            EnumName = key
+                        }
+                    }
+                }
+                if (EnumName) {
+                    // We get the name of enum
+                    return new Types.EnumOf(
+                        EnumName,
+                        enums.map((x, index) => ({
+                            name: x as string,
+                            value: from.type === 'string' ? (x as string) : index,
+                            // If this is a string enum, then every enum value is the name of itself
+                        })),
+                    )
+                } else {
+                    // We can't figure out the name of enum, so we have to use a | b | c type
+                    const or = new Types.Or(
+                        enums.map((member, index) => new Types.Literal(from.type === 'string' ? member : index, true)),
+                    )
+                    from.type === 'number' && or.addJSDoc(['enum:', ...enums.map((x, index) => `  ${x}: ${index}`)])
+                    return or
+                }
             } else {
                 console.warn(`Schema2ts can not create **enum** of type **${from.type}**, use it original type instead`)
                 return JSONSchemaToTypes(newer)

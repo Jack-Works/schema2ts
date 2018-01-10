@@ -7,6 +7,7 @@ const OpenAPI2 = [
     'https://raw.githubusercontent.com/OAI/OpenAPI-Specification/master/examples/v2.0/yaml/petstore-with-external-docs.yaml',
     'https://raw.githubusercontent.com/OAI/OpenAPI-Specification/master/examples/v2.0/json/petstore.json',
     'https://raw.githubusercontent.com/OAI/OpenAPI-Specification/master/examples/v2.0/yaml/uber.yaml',
+    __dirname + '/sources/openapi-2.0-enum.yaml',
 ]
 
 const commentTemplate = (file: string, dec?: any) => `
@@ -28,8 +29,8 @@ async function run(urls: string[], path: string) {
                 outPath: __dirname + '/' + path,
                 customFileComment: commentTemplate(url),
             }
-            await cli(config)
-            await cli({ ...config, declaration: true, customFileComment: commentTemplate(url, true) })
+            cli(config)
+            cli({ ...config, declaration: true, customFileComment: commentTemplate(url, true) })
         } catch (e) {
             console.error(e)
         }
