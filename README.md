@@ -1,8 +1,8 @@
 <h2 align="center">Schema2ts</h2>
 
 <p align="center">
-  <a href="https://travis-ci.org/Jack-Works/schema2tscode">
-    <img alt="Travis" src="https://img.shields.io/travis/Jack-Works/schema2tscode.svg?style=flat-square">
+  <a href="https://travis-ci.org/Jack-Works/schema2ts">
+    <img alt="Travis" src="https://img.shields.io/travis/Jack-Works/schema2ts.svg?style=flat-square">
   </a>
   <a href="https://www.npmjs.com/package/schema2ts">
     <img alt="npm version" src="https://img.shields.io/npm/v/schema2ts.svg?style=flat-square">
@@ -32,13 +32,12 @@ Options:
 ## API Usage
 
 ```typescript
-export interface Schema2tsAPI {
+interface Schema2tsAPI {
     /** Custom template that used to generate code */ template?: string
     /** If this is true, template will be treated as url/file path */ isTemplateUrl?: boolean
     /** Schema that used to generate code */ schema: string | object
     /** If this is true, schema will be treated as url/file path */ isSchemaUrl?: boolean
-    /** Generate only declarations
-     * TODO: Not implemented yet. */ declaration?: boolean
+    /** Generate only declarations */ declaration?: boolean
     /** If you only want to change comments on the top, you may need this. */ customFileComment?: string
 }
 export default function(config: Schema2tsAPI): Promise<string>
@@ -60,6 +59,25 @@ Specs.set('My API', MySpec)
 // Set your spec before API call
 API({ schema: { mySchema: true } }).then(result => {})
 ```
+
+### Utils for developers
+
+In [`schema2ts/dist/utils.js`](./src/utils.ts), we have some utils that are useful when handle with schema objects.
+
+**Important!**: These utils are not guaranteed to be stable, especially undocumented ones.
+
+```typescript
+/**
+ * This is an impl of parsing JSON Schema into internal expression of type in schema2ts
+ *
+ * About JSON Schema, see: https://tools.ietf.org/html/draft-fge-json-schema-validation-00
+ */
+async createJSONSchemaToTypes(document: any) => (from: JSONSchema, ): Types.Type
+```
+
+In [`schema2ts/dist/code/types.js`](./src/code/types.ts), we define an internal express of Types
+
+See [Internal type express](./src/code/types.md)
 
 ## Template variables
 

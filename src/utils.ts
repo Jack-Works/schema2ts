@@ -116,7 +116,7 @@ export type OpenAPI2AdditionalPrimitive = 'long' | 'double'
 /** JSON Schema -> Schema2ts inner express */
 export async function createJSONSchemaToTypes(document: any, nameOptions?: any) {
     const doc: $RefParser.$Refs = await ($RefParser as any).resolve(document)
-    return function JSONSchemaToTypes(from: Schema, Typereferences: Types.TypeReferenceType[] = []): Types.Type {
+    return function JSONSchemaToTypes(from: Schema): Types.Type {
         //#region Speical properties
         if (from.$ref) {
             const result = doc.get(from.$ref)
