@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { Generator } from './code/render'
 import { writeFile } from 'fs'
 import { join, parse } from 'path'
 import * as minimist from 'minimist'

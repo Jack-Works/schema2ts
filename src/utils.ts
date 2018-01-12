@@ -21,10 +21,10 @@ export class ReadonlyFileSystemHost extends DefaultFileSystemHost {
         return normalize(join(this.getCurrentDirectory(), filePath))
     }
     async writeFile(filePath: string, fileText: string) {
-        this.changes.set(normalize(filePath), fileText)
+        this.changes.set(this.getPath(filePath), fileText)
     }
     writeFileSync(filePath: string, fileText: string) {
-        this.changes.set(normalize(filePath), fileText)
+        this.changes.set(this.getPath(filePath), fileText)
     }
     readFileSync(filePath: string, encoding?: string) {
         return this.changes.get(this.getPath(filePath)) || super.readFileSync(filePath, encoding)
@@ -91,15 +91,10 @@ export function GenerateAsyncFunction(
     returnType: ts.TypeNode = AnyType,
     JSDocCommet?: string,
     modifiers: ts.Modifier[] = [],
-    decorators: ts.Decorator[] = [],
 ) {
-    const JSDoc: ts.Decorator | undefined = JSDocCommet
-        ? ts.createDecorator(ts.createIdentifier(`__JSDoc__ /** ${JSDocCommet} */`))
-        : undefined
-    const tdecorator: ts.Decorator[] = [JSDoc as ts.Decorator, ...decorators].filter(x => x)
     const returnTypePromise = ts.createTypeReferenceNode('Promise', [returnType])
-    return ts.createFunctionDeclaration(
-        tdecorator,
+    const node = ts.createFunctionDeclaration(
+        undefined,
         [Export, ...modifiers],
         undefined,
         name,
@@ -108,6 +103,8 @@ export function GenerateAsyncFunction(
         returnTypePromise,
         body,
     )
+    JSDocCommet && ts.addSyntheticLeadingComment(node, ts.SyntaxKind.MultiLineCommentTrivia, `* ${JSDocCommet} `, true)
+    return node
 }
 
 export type JSONSchemaPrimitive = 'array' | 'boolean' | 'integer' | 'float' | 'number' | 'null' | 'object' | 'string'

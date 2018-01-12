@@ -1,8 +1,10 @@
 {
   "dependencies": {
+    "@types/lodash.flatten": "^4.4.3",
     "axios": "^0.17.1",
     "json-schema-ref-parser": "^4.0.4",
     "lodash.clonedeep": "^4.5.0",
+    "lodash.flatten": "^4.4.0",
     "minimist": "^1.2.0",
     "request": "^2.83.0",
     "swagger-parser": "^4.0.1",

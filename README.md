@@ -39,6 +39,7 @@ interface Schema2tsAPI {
     /** If this is true, schema will be treated as url/file path */ isSchemaUrl?: boolean
     /** Generate only declarations */ declaration?: boolean
     /** If you only want to change comments on the top, you may need this. */ customFileComment?: string
+    /** Code generator */ generator?: typeof RestClientGenerator
 }
 export default function(config: Schema2tsAPI): Promise<string>
 ```
@@ -93,6 +94,14 @@ Variables that you can use in template comments
 ### Supported schema type?
 
 * [OpenAPI 2.0](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md)
+
+### Supported generator?
+
+* [Rest Client (using axios)](./src/code/generator/rest-client.ts)
+* Rest Client (using fetch) _In Future_
+* Fake rest server _In Future_
+
+_You can create your own generator!_
 
 ### What does it generate?
 
