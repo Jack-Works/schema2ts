@@ -1,8 +1,7 @@
 import * as Swagger2 from 'swagger-parser'
 import * as Swagger2Spec from 'swagger-schema-official'
-import { Server, IEndPoint } from '../../../code/server'
+import { RestAPI, IEndPoint } from '../../../code/server'
 import * as Types from '../../../code/types'
-import { Operation, Definition } from 'swagger2/dist/schema'
 import {
     Parameter,
     QueryParameter,
@@ -11,14 +10,16 @@ import {
     FormDataParameter,
     BodyParameter,
 } from 'swagger-schema-official'
-import { JSONSchemaToTypes, getValidVarName } from '../../../utils'
+import { createJSONSchemaToTypes, getValidVarName } from '../../../utils'
+import cloneDeep = require('lodash.clonedeep')
 
 export function is(object: any): object is Swagger2Spec.Spec {
     if (object.swagger != '2.0') {
         return false
     }
     // validate isn't a sync function, so we let it go through, if validate failed, throw then
-    Swagger2.validate(object).catch(reason => {
+    // !?!?! validate dereferenced JSON $ref?????
+    Swagger2.validate(cloneDeep(object)).catch(reason => {
         throw reason
     })
     return true
@@ -31,8 +32,8 @@ const baseTypeMap: Record<any, any> = {
     number: 1,
 }
 
-async function main(_doc: Swagger2Spec.Spec): Promise<Server> {
-    const doc: Swagger2Spec.Spec = await Swagger2.dereference(_doc)
+export async function transformer(doc: Swagger2Spec.Spec): Promise<RestAPI> {
+    const JSONSchemaToTypes = await createJSONSchemaToTypes(doc, true)
 
     const baseUrl = doc.basePath
     const endpoints: IEndPoint[] = []
@@ -72,7 +73,7 @@ async function main(_doc: Swagger2Spec.Spec): Promise<Server> {
             pathParams: Param,
             formParams: Param,
             bodyParams: IEndPoint['bodyParams']
-        const result: IEndPoint['result'] = []
+        const result: IEndPoint['response'] = []
         if (op.parameters) {
             function fromParameter(of: ParametersIn) {
                 const n = op!.parameters!.filter(x => x.in === of)
@@ -113,19 +114,24 @@ async function main(_doc: Swagger2Spec.Spec): Promise<Server> {
                 const num = parseInt(status, 10)
                 if (status === 'default' || !isNaN(num)) {
                     const r = op.responses[status]
-                    result.push([!isNaN(num) ? num : status, r.schema ? JSONSchemaToTypes(r.schema) : new Types.Any()])
+                    result.push({
+                        status: !isNaN(num) ? num : status,
+                        returnType: r.schema ? JSONSchemaToTypes(r.schema) : new Types.Any(),
+                        header:
+                            r.headers &&
+                            (JSONSchemaToTypes({ type: 'object', properties: r.headers }) as Types.ObjectOf),
+                    })
                 }
             }
         }
 
         endpoints.push({
-            comment: op.description || op.summary,
             JSDoc: JSDoc,
             url: path,
             urlParams: pathParams,
             headerParams,
             queryParams,
-            result,
+            response: result,
             name: op.operationId ? getValidVarName(op.operationId) : undefined,
             bodyParamsType,
             bodyParams: bodyParamsType === 'json' ? bodyParams : formParams,
@@ -133,7 +139,4 @@ async function main(_doc: Swagger2Spec.Spec): Promise<Server> {
             modifier: {},
         })
     }
-}
-export function transformer(content: object) {
-    return () => main(content as any)
 }

@@ -1,15 +1,20 @@
 {
   "dependencies": {
     "axios": "^0.17.1",
+    "json-schema-ref-parser": "^4.0.4",
+    "lodash.clonedeep": "^4.5.0",
+    "lodash.flatten": "^4.4.0",
     "minimist": "^1.2.0",
     "request": "^2.83.0",
     "swagger-parser": "^4.0.1",
-    "swagger2": "0.0.25",
     "ts-simple-ast": "^5.3.1",
     "typescript": "^2.6.0",
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@types/lodash.flatten": "^4.4.3",
+    "@types/json-schema": "^6.0.0",
+    "@types/lodash.clonedeep": "^4.5.3",
     "@types/minimist": "^1.2.0",
     "@types/node": "^8.0.31",
     "@types/request": "^2.0.8",
@@ -27,10 +32,10 @@
     "schema2ts": "./dist/cli.js"
   },
   "name": "schema2ts",
-  "version": "0.5.0-beta.3",
-  "description": "Generate .ts class and namespace contains interface from API Schema",
+  "version": "0.5.0",
+  "description": "Generate Typescript code from API Schema",
   "main": "dist/api.js",
-  "repository": "https://github.com/Jack-Works/schema2tscode",
+  "repository": "https://github.com/Jack-Works/schema2ts",
   "author": "Jack Works",
   "license": "MIT"
 }

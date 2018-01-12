@@ -1,0 +1,50 @@
+# This example is from https://swagger.io/docs/specification/2-0/enums/
+swagger: '2.0'
+info:
+  version: 1.0.0
+  title: Swagger Petstore
+  description: >
+    A sample API that uses a petstore as an example
+    to demonstrate features in the swagger-2.0 specification
+consumes:
+  - application/json
+produces:
+  - application/json
+definitions:
+  Colors:
+    type: string
+    enum: &COLORS [black, white, red, green, blue]
+  Language:
+    type: number
+    enum: &LANGS [Typescript, Javascript]
+
+paths:
+  /products:
+    get:
+      parameters:
+        # yaml reference
+        - in: query
+          name: color
+          required: true
+          type: string
+          enum: *COLORS
+        - in: query
+          name: lang
+          required: true
+          type: number
+          enum: *LANGS
+        # direct definition
+        - in: query
+          name: direction
+          required: true
+          type: string
+          enum: [left, right]
+        - in: query
+          name: name
+          required: true
+          type: number
+          enum: [peter, jack]
+      responses:
+        200:
+          description: OK
+          

@@ -1,18 +1,19 @@
-import { Generator } from './code/render'
-import schema2server from './specifications/specifications'
+export { RestAPI as Schema2tsServerDefinition } from './code/server'
+import schema2server from './specifications'
 
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { requestFile, parseJSONorYAML } from './utils'
+import { RestClientGenerator } from './code/generator/rest-client'
 
 export interface Schema2tsAPI {
     /** Custom template that used to generate code */ template?: string
     /** If this is true, template will be treated as url/file path */ isTemplateUrl?: boolean
     /** Schema that used to generate code */ schema: string | object
     /** If this is true, schema will be treated as url/file path */ isSchemaUrl?: boolean
-    /** Generate only declarations
-     * TODO: Not implemented yet. */ declaration?: boolean
+    /** Generate only declarations */ declaration?: boolean
     /** If you only want to change comments on the top, you may need this. */ customFileComment?: string
+    /** Code generator */ generator?: (server: any, template: string, config: any) => string
 }
 
 const defaultTemplate = join(__dirname, '..', 'src', 'default.template.ts')
@@ -29,6 +30,7 @@ export default async function({
     template = isTemplateUrl ? defaultTemplate : readFileSync(defaultTemplate, 'utf-8'),
     schema,
     customFileComment = defaultTemplateComment,
+    generator = RestClientGenerator as Schema2tsAPI['generator'],
     ...config
 }: Schema2tsAPI) {
     if (isTemplateUrl) {
@@ -48,8 +50,8 @@ export default async function({
 /*--------------------------------------------------------------------------------------------
 ${customFileComment.replace('%default-template%', defaultTemplateComment)}
 *--------------------------------------------------------------------------------------------*/`
-    const internalExpressOfSchema = await schema2server(schema as object)()
-    const code = Generator(internalExpressOfSchema, template, {
+    const internalExpressOfSchema = await schema2server(schema as object)
+    const code = generator!(internalExpressOfSchema, template, {
         declarationOnly: config.declaration,
         leadingComments: leadingComments,
     })
