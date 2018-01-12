@@ -120,7 +120,6 @@ export async function transformer(doc: Swagger2Spec.Spec): Promise<Server> {
         }
 
         endpoints.push({
-            comment: op.description || op.summary,
             JSDoc: JSDoc,
             url: path,
             urlParams: pathParams,

@@ -1,7 +1,7 @@
 import * as ts from 'typescript'
 import * as ast from 'ts-simple-ast'
 import * as Types from '../types'
-import { getValidVarName, GenerateAsyncFunction } from '../../utils'
+import { getValidVarName, GenerateAsyncFunction, createJSDoc } from '../../utils'
 import { Server, IEndPoint } from '../server'
 import { Render } from '../render'
 import { Export, AnyType } from '../../constants'
@@ -49,6 +49,14 @@ class Transformer {
         this.statements.push(url, method)
         const id = (x: string) => ts.createIdentifier(x)
         const notEmitParameters = parameters.filter(x => x.type.isFalsy()).map(x => x.key)
+        // * Not in use
+        function depercationWarning() {
+            if (ep.JSDoc && ep.JSDoc.depercated) {
+                return ts.createStatement(
+                    ts.createCall(id('console.warn'), undefined, [ts.createLiteral(`${name} is depercated`)]),
+                )
+            }
+        }
         const FunctionBody: ts.FunctionBody = ts.createBlock(
             [
                 ts.createReturn(
@@ -113,7 +121,7 @@ class Transformer {
                         ts.createParameter(undefined, undefined, undefined, x.key, undefined, x.type.toTypescript()),
                     ),
                 returnTypesUnion,
-                ep.comment,
+                createJSDoc(ep.JSDoc),
             ),
         )
         this.removeDuplicateDeclarations()

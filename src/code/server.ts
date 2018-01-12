@@ -1,16 +1,13 @@
 import * as Types from './types'
+export type JSDoc = Partial<{
+    depercated: boolean
+    description: string
+    example: string
+    see: string
+    summary: string
+}>
 export interface IEndPoint {
-    /** @deprecated
-     * JSDoc comment that will be added to top of the function */ comment?: string
-    /** JSDocs
-     * TODO: Old "comment" is depercated
-     */ JSDoc?: {
-        depercated?: boolean
-        description?: string
-        example?: string
-        see?: string
-        summary?: string
-    }
+    /** JSDocs */ JSDoc?: JSDoc
     /** Entry point */ url: string
     /** HTTP Method */ method: 'get' | 'put' | 'post' | 'delete' | 'options' | 'head' | 'patch'
     /** Path Parameters */ urlParams?: Types.ObjectOf | Types.TypeReferenceType
@@ -20,10 +17,7 @@ export interface IEndPoint {
     /** Query parameters */ queryParams?: Types.ObjectOf | Types.TypeReferenceType
     /** Return type */ result?: [number | string, Types.Type][]
     /** Code-friendly name of the function */ name?: string
-    /** More and more */ modifier?: {
-        /** @deprecated
-         * TODO: This is also depercated, Move to JSDoc.depercated */ depercated?: boolean
-    }
+    /** More and more */ modifier?: {}
 }
 export interface Server {
     /** Base URL of a server, like https://api.example.com/ */ baseUrl: string

@@ -9,6 +9,7 @@ import { DefaultFileSystemHost } from 'ts-simple-ast/dist/fileSystem'
 import { Schema } from 'swagger-schema-official'
 import * as Types from './code/types'
 import * as $RefParser from 'json-schema-ref-parser'
+import { JSDoc } from './code/server'
 
 // tslint:disable-next-line:quotemark (conflict with prettier)
 const ValidCharsInURLSpecButNOTInVarName = "-._~:/?#[]@!&'()*+,;= ".split('')
@@ -253,4 +254,16 @@ export const getJSONRefName = (x: Schema, openapi?: any) => {
         if (name.startsWith('definitions')) return getValidVarName(name).replace(/^definitions_/, '')
     }
     return getValidVarName(name)
+}
+
+export function createJSDoc(jsdoc?: JSDoc) {
+    if (!jsdoc) {
+        return
+    }
+    let comment = '* '
+    if (jsdoc.depercated) comment += '\n @depercated'
+    if (jsdoc.summary) comment += '\n ' + jsdoc.summary
+    if (jsdoc.description) comment += '\n\n' + jsdoc.description
+    if (jsdoc.see) comment += '\n @see ' + jsdoc.see
+    return comment
 }
