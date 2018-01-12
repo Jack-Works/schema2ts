@@ -15,8 +15,11 @@ export interface IEndPoint {
     /** Body parameters (json) */ bodyParams?: Types.Type & { optional?: boolean }
     /** Header parameters */ headerParams?: Types.ObjectOf | Types.TypeReferenceType
     /** Query parameters */ queryParams?: Types.ObjectOf | Types.TypeReferenceType
-    /** Return type */ result?: [number | string, Types.Type][]
-    /** Result header typing */ resultHeader?: Types.ObjectOf
+    /** Response Type */ response?: {
+        status: number | string
+        returnType: Types.Type
+        header?: Types.ObjectOf | Types.TypeReferenceType
+    }[]
     /** Code-friendly name of the function */ name?: string
     /** More and more */ modifier?: {}
 }

@@ -257,13 +257,15 @@ export const getJSONRefName = (x: Schema, openapi?: any) => {
 }
 
 export function createJSDoc(jsdoc?: JSDoc) {
-    if (!jsdoc) {
+    if (!jsdoc || Object.keys(jsdoc).filter(x => (jsdoc as any)[x] !== undefined).length === 0) {
         return
     }
-    let comment = '* '
-    if (jsdoc.depercated) comment += '\n @depercated'
-    if (jsdoc.summary) comment += '\n ' + jsdoc.summary
-    if (jsdoc.description) comment += '\n\n' + jsdoc.description
-    if (jsdoc.see) comment += '\n @see ' + jsdoc.see
+    let comment = ''
+    if (jsdoc.depercated) comment += '\n@depercated'
+    if (jsdoc.summary) comment += '\n@summary ' + jsdoc.summary
+    if (jsdoc.description) comment += '\n@description ' + jsdoc.description
+    if (jsdoc.see) comment += '\n@see ' + jsdoc.see
+    comment = comment.replace(/^\n/, '')
+    if (comment.match(/\n/)) comment += '\n'
     return comment
 }

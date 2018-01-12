@@ -73,7 +73,7 @@ export async function transformer(doc: Swagger2Spec.Spec): Promise<RestAPI> {
             pathParams: Param,
             formParams: Param,
             bodyParams: IEndPoint['bodyParams']
-        const result: IEndPoint['result'] = []
+        const result: IEndPoint['response'] = []
         if (op.parameters) {
             function fromParameter(of: ParametersIn) {
                 const n = op!.parameters!.filter(x => x.in === of)
@@ -114,7 +114,13 @@ export async function transformer(doc: Swagger2Spec.Spec): Promise<RestAPI> {
                 const num = parseInt(status, 10)
                 if (status === 'default' || !isNaN(num)) {
                     const r = op.responses[status]
-                    result.push([!isNaN(num) ? num : status, r.schema ? JSONSchemaToTypes(r.schema) : new Types.Any()])
+                    result.push({
+                        status: !isNaN(num) ? num : status,
+                        returnType: r.schema ? JSONSchemaToTypes(r.schema) : new Types.Any(),
+                        header:
+                            r.headers &&
+                            (JSONSchemaToTypes({ type: 'object', properties: r.headers }) as Types.ObjectOf),
+                    })
                 }
             }
         }
@@ -125,7 +131,7 @@ export async function transformer(doc: Swagger2Spec.Spec): Promise<RestAPI> {
             urlParams: pathParams,
             headerParams,
             queryParams,
-            result,
+            response: result,
             name: op.operationId ? getValidVarName(op.operationId) : undefined,
             bodyParamsType,
             bodyParams: bodyParamsType === 'json' ? bodyParams : formParams,

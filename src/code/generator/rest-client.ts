@@ -81,35 +81,53 @@ class Transformer {
             ],
             true,
         )
-        function createResponse(statusCode: ts.TypeNode, ref: ts.TypeNode) {
-            return ts.createTypeReferenceNode('_Response', [statusCode, ref])
+        function createResponse(statusCode: ts.TypeNode, ref: ts.TypeNode, header: ts.TypeNode) {
+            const TypeArguments = [statusCode, ref, header]
+            if (header.kind === ts.SyntaxKind.AnyKeyword) {
+                TypeArguments.pop()
+                if (ref.kind === ts.SyntaxKind.AnyKeyword) {
+                    TypeArguments.pop()
+                }
+            }
+            return ts.createTypeReferenceNode('_Response', TypeArguments)
         }
         const returnTypesUnion: ts.TypeNode = (result => {
-            type Response = [number | string, ts.TypeNode]
-            if (!ep.result) {
+            if (!ep.response) {
                 return AnyType
             }
-            const refs = ep.result
-                .map<Response>(([code, type]) => {
-                    if (type.isFalsy()) return null as any
-                    if (Types.isLiteralType(type)) {
-                        return [code, type.toTypescript()]
-                    }
-                    const ref = new Types.TypeReferenceType(name + '_result_' + code, type)
-                    this.declarations.push(...type.getDeclaration())
-                    return [code, type.toTypescript()]
-                })
+            const refs = ep.response
+                .map<{ code: number | string; type: ts.TypeNode; header: ts.TypeNode }>(
+                    ({ status: code, returnType: type, header: header }) => {
+                        if (type.isFalsy()) return null as any
+                        if (!Types.isLiteralType(type)) {
+                            const ref = new Types.TypeReferenceType(name + '_response' + code, type)
+                            this.declarations.push(...type.getDeclaration())
+                            type = ref
+                        }
+                        let headerType: Types.Type = new Types.Any()
+                        if (header) {
+                            if (!Types.isTypeReference(header)) {
+                                headerType = new Types.TypeReferenceType(name + '_response_header' + code, header)
+                            } else {
+                                headerType = header
+                            }
+                            this.declarations.push(...headerType.getDeclaration())
+                        }
+                        return { code, type: type.toTypescript(), header: headerType.toTypescript() }
+                    },
+                )
                 .filter((x: any) => x)
             if (refs.length === 0) {
-                return createResponse(AnyType, AnyType)
+                return createResponse(AnyType, AnyType, AnyType)
             }
             if (refs.length === 1) {
-                return createResponse(new Types.Literal(refs[0][0], true).toTypescript(), refs[0][1])
+                const r = refs[0]
+                return createResponse(new Types.Literal(r.code, true).toTypescript(), r.type, r.header)
             }
             return ts.createUnionTypeNode(
-                refs.map((x: Response) => createResponse(new Types.Literal(x[0], true).toTypescript(), x[1])),
+                refs.map(x => createResponse(new Types.Literal(x.code, true).toTypescript(), x.type, x.header)),
             )
-        })(ep.result)
+        })(ep.response)
 
         this.declarations.push(
             GenerateAsyncFunction(
