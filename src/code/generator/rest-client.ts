@@ -100,14 +100,14 @@ class Transformer {
                     ({ status: code, returnType: type, header: header }) => {
                         if (type.isFalsy()) return null as any
                         if (!Types.isLiteralType(type)) {
-                            const ref = new Types.TypeReferenceType(name + '_response' + code, type)
+                            const ref = new Types.TypeReferenceType(name + '_response_' + code, type)
                             this.declarations.push(...type.getDeclaration())
-                            type = ref
+                            // type = ref
                         }
                         let headerType: Types.Type = new Types.Any()
                         if (header) {
                             if (!Types.isTypeReference(header)) {
-                                headerType = new Types.TypeReferenceType(name + '_response_header' + code, header)
+                                headerType = new Types.TypeReferenceType(name + '_response_header_' + code, header)
                             } else {
                                 headerType = header
                             }
