@@ -2,7 +2,7 @@ import * as ts from 'typescript'
 import * as ast from 'ts-simple-ast'
 import * as Types from '../types'
 import { getValidVarName, GenerateAsyncFunction, createJSDoc } from '../../utils'
-import { Server, IEndPoint } from '../server'
+import { RestAPI, IEndPoint } from '../server'
 import { Render } from '../render'
 import { Export, AnyType } from '../../constants'
 import flatten = require('lodash.flatten')
@@ -142,7 +142,7 @@ export interface Schema2tsGeneratorConfig {
     leadingComments?: string
 }
 
-export function RestClientGenerator(server: Server, template: string, config: Schema2tsGeneratorConfig) {
+export function RestClientGenerator(server: RestAPI, template: string, config: Schema2tsGeneratorConfig) {
     const render = new Render({ declarationOnly: config.declarationOnly })
     const transformer = new Transformer()
     server.endpoints.map(x => transformer.endPointToDeclaration(x))

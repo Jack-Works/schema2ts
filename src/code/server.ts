@@ -16,10 +16,11 @@ export interface IEndPoint {
     /** Header parameters */ headerParams?: Types.ObjectOf | Types.TypeReferenceType
     /** Query parameters */ queryParams?: Types.ObjectOf | Types.TypeReferenceType
     /** Return type */ result?: [number | string, Types.Type][]
+    /** Result header typing */ resultHeader?: Types.ObjectOf
     /** Code-friendly name of the function */ name?: string
     /** More and more */ modifier?: {}
 }
-export interface Server {
+export interface RestAPI {
     /** Base URL of a server, like https://api.example.com/ */ baseUrl: string
     endpoints: IEndPoint[]
     /**

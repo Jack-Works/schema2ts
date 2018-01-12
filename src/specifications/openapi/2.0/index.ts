@@ -1,6 +1,6 @@
 import * as Swagger2 from 'swagger-parser'
 import * as Swagger2Spec from 'swagger-schema-official'
-import { Server, IEndPoint } from '../../../code/server'
+import { RestAPI, IEndPoint } from '../../../code/server'
 import * as Types from '../../../code/types'
 import {
     Parameter,
@@ -32,7 +32,7 @@ const baseTypeMap: Record<any, any> = {
     number: 1,
 }
 
-export async function transformer(doc: Swagger2Spec.Spec): Promise<Server> {
+export async function transformer(doc: Swagger2Spec.Spec): Promise<RestAPI> {
     const JSONSchemaToTypes = await createJSONSchemaToTypes(doc, true)
 
     const baseUrl = doc.basePath

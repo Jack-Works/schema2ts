@@ -1,4 +1,4 @@
-export { Server as Schema2tsServerDefinition } from './code/server'
+export { RestAPI as Schema2tsServerDefinition } from './code/server'
 import schema2server from './specifications'
 
 import { readFileSync } from 'fs'
@@ -13,7 +13,7 @@ export interface Schema2tsAPI {
     /** If this is true, schema will be treated as url/file path */ isSchemaUrl?: boolean
     /** Generate only declarations */ declaration?: boolean
     /** If you only want to change comments on the top, you may need this. */ customFileComment?: string
-    /** Code generator */ generator?: typeof RestClientGenerator
+    /** Code generator */ generator?: (server: any, template: string, config: any) => string
 }
 
 const defaultTemplate = join(__dirname, '..', 'src', 'default.template.ts')
@@ -30,7 +30,7 @@ export default async function({
     template = isTemplateUrl ? defaultTemplate : readFileSync(defaultTemplate, 'utf-8'),
     schema,
     customFileComment = defaultTemplateComment,
-    generator = RestClientGenerator,
+    generator = RestClientGenerator as Schema2tsAPI['generator'],
     ...config
 }: Schema2tsAPI) {
     if (isTemplateUrl) {
@@ -51,7 +51,7 @@ export default async function({
 ${customFileComment.replace('%default-template%', defaultTemplateComment)}
 *--------------------------------------------------------------------------------------------*/`
     const internalExpressOfSchema = await schema2server(schema as object)
-    const code = generator(internalExpressOfSchema, template, {
+    const code = generator!(internalExpressOfSchema, template, {
         declarationOnly: config.declaration,
         leadingComments: leadingComments,
     })
